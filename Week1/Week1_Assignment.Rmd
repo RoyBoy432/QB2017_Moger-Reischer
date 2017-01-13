@@ -52,6 +52,8 @@ In the R code chunk below, please provide the code to:
 rm(list=ls())
 getwd()
 setwd("~/GitHub/QB2017_Moger-Reischer/Week1")
+#later, on my own computer
+setwd("C:\\Users\\rmoge\\GitHub\\QB2017_Moger-Reischer\\Week1")
 
 ```
 
@@ -161,10 +163,11 @@ In the R code chunk below, do the following:
 3) Determine the dimensions of the transposed matrix.
 
 ```{r}
-mguy2<-as.matrix(read.table("data/matrix.txt",sep="\t",header=FALSE))
-xpose_mguy2<-t(mguy2)
+m<-as.matrix(read.table("data/matrix.txt",sep="\t",header=FALSE))
+m
+xpose_mguy2<-t(m)
 dim(xpose_mguy2)
-
+xpose_mguy2
 
 ```
 
@@ -181,9 +184,8 @@ In the R code chunk below, do the following:
 2) Remove the last row of matrix `m`.
 
 ```{r}
-#matrix 'm' doesnt exist but I will follow the instructions literally
-n<-m[ ,c(1:2,4:10)]
-m<-m[ ,c(1:9)]
+n<-m[ ,c(1:2,:4:5)]
+m<-m[ ,c(1:4)]
 ```
 
 ***Question 3***: Describe what we just did in the last series of indexing steps.
@@ -200,8 +202,8 @@ In the R code chunk below, do the following:
 2) Display the structure of this data set.
 
 ```{r}
-
-
+ROYZOOP<-read.table("data\\zoop_nuts.txt",sep="\t",header=TRUE)
+str(ROYZOOP)
 ```
 
 ### Correlation
@@ -212,14 +214,17 @@ In the R code chunk below, do the following:
 3) Conduct a simple **Pearson's correlation** analysis.
 
 ```{r}
-
+NUMZOOP<-ROYZOOP[,3:8]
+pairs(NUMZOOP)
+cor3_8<-cor(NUMZOOP)
+cor3_8
 
 ```
 
 
 ***Question 4***: Describe some of the general features based on the visualization and correlation analysis above?
 
-> Answer 4:
+> Answer 4: N and P in all their forms are positively correlated. Zooplankton are positively correlated with the nutrients. Chl a is negatively correlated with all of the above, but the correlation is less strong. The is a very large amount of tanks with ~0 chl a, which might be confusing for the Pearson correlation (the data are not normally distributed). Maybe Spearman rank correlation would be more appropriate?
 
 
 In the R code chunk below, do the following:
@@ -228,8 +233,12 @@ In the R code chunk below, do the following:
 3) Use the print command from the handout to see the results of each correlation analysis.
 
 ```{r}
-
-
+library(psych)
+cor3_8P<-corr.test(NUMZOOP,method="pearson",adjust="BH")
+cor3_8P
+cor3_8kendall<-corr.test(NUMZOOP,method="kendall",adjust="BH")
+print(cor3_8kendall, digits=4,short=FALSE)
+print(cor3_8P,digits=4,short=FALSE)
 
 ```
 
@@ -239,13 +248,16 @@ Specifically, are the results sensitive to whether you use parametric (i.e., Pea
 When should one use non-parametric methods instead of parametric methods?
 With the Pearson's method, is there evidence for false discovery rate due to multiple comparisons? Why is false discovery rate important?
 
-> ***Answer 5***: 
+> ***Answer 5***: 1> Not very sensitive. The results were not qualitatively different between the two types of tests. I did notice that P-values tended to be larger in the non-parametric test. IDK if my reasoning is ironclad, but it makes subjective sense bc I would expect the nonparametric test to have less power...
+> 2> I would use the nonparametric methods for chl a corrlns, bc the chl a datapoints were positively skewed.
+> 3> A little, but the FDR-adjusted P-values aren't much larger than unadjusted values. 4> It's useful when you're running a LOT of tests, e.g. evaluating SNP data \ni you have ~1,000,000 variable sites and are testing for significance at each. You'd expect 50,000 false positive SNPs due to chance. So your chance of having ONE false positive is clearly NOT 5% once you're running multiple tests. So FDR more or less divides how many significant datapoints you expect-due-to-chance-alone by how many significant datapoints were observed. The MOST-significant datapoint doesn't get adjusted; the second-most signif value gets multiplied by (number_of_tests)/(number_of_tests - 1). If it is still < 0.05, then it is stiff signif after the FDR adjustment.    <-- or something like that.
 
 
 In the R code chunk below, use the `corrplot` function in the *corrplot* package to produce the ellipse correlation plot in the handout.
 
 ```{r}
-
+library(corrplot)
+corrplot(cor3_8,method="ellipse")
 
 ```
 
@@ -257,29 +269,38 @@ In the R code chunk below, do the following:
 3) Produce a plot of this regression analysis including the following: categorically labeled points, the predicted regression line with 95% confidence intervals, and the appropriate axis labels.
 
 ```{r}
+fit8_4<-lm(ZP ~ TN,data=ROYZOOP)
+fit8_4
 
+plot(ROYZOOP$TN, ROYZOOP$ZP, ylim=c(0,10), xlim=c(500,5000),xlab=expression(paste("Total N (", mu, "g/L")),ylab="Zooplankton Biomass (mg/L)",las=1)
+text(ROYZOOP$TN,ROYZOOP$ZP,ROYZOOP$NUTS, pos=3,cex=0.8)
 
+endsTN<-seq(min(ROYZOOP$TN),max(ROYZOOP$TN),10)
 
+regline<-predict(fit8_4,newdata=data.frame(TN=endsTN))
+lines(endsTN,regline,col="#63c349")
 
-
+conf95<-predict(fit8_4,newdata=data.frame(TN = endsTN),interval=c("confidence"),level=0.95,type="response")
+matlines(endsTN,conf95[,c("lwr","upr")],lty=2,lwd=1,col="#c0a6fd")
 
 
 ```
 
 ***Question 6***: Interpret the results from the regression model
 
-> ***Answer 6***:
+> ***Answer 6***: As [N] increases, [zooplankton] increases also. for each unit increase in [N], [zooplankton] increases by about the same amount (1:1 relationship)    However, I don't think it is a perfect model. MANY datapoints fall outside the CIs. It would be useful to calculate an R-square value...
 
 
 
 ***Question 7***: Explain what the `predict()` function is doing in our analyses.
 
-> ***Answer 7***:
+> ***Answer 7***: I think it uses the y=mx+b equation of the fit8_4 regression to generate y-values from x-values
 
 Using the R code chunk below, use the code provided in the handout to determine if our data meet the assumptions of the linear regression analysis. 
 
 ```{r}
-
+par(mfrow=c(2,2),mar=c(5.1,4.1,4.1,2.1))
+plot(fit8_4)
 ```
 
 + Upper left: is there a random distribution of the residuals around zero (horizontal line)?
@@ -287,6 +308,8 @@ Using the R code chunk below, use the code provided in the handout to determine 
 + Bottom left: again, looking for a random distribution of sqrt(standardized residuals)
 + Bottom right: leverage indicates the influence of points; contours correspond with Cook's distance, where values > |1| are "suspicious"
 
+> No, I don't think the data meet the assumptions. There is a systematic deviation from normality in the QQ plot.
+The scale-location is also systematically weird. And I am still not sure I understand how to interpret the leverage plot---right now it seems to indicate that not of the points are "weird" because they're all closer to the horizontal axis than the 0.5 Cook's contour... so maybe the data are normal?
 ### Analysis of Variance (ANOVA)
 
 Using the R code chunk below, do the following:
@@ -298,7 +321,20 @@ Using the R code chunk below, do the following:
 
 ```{r}
 
+nutr<-factor(ROYZOOP$NUTS,levels=c("L","M","H"))
+zp.means<-tapply(ROYZOOP$ZP,nutr,mean)
+#wow, that's really useful
+SEm<-function(a){
+  sd(na.omit(a))/sqrt(length(na.omit(a)))
+}
+zp.sem<-tapply(ROYZOOP$ZP,nutr,SEm)
+zpbp<-barplot(zp.means,ylim=c(0,round(max(ROYZOOP$ZP),digits=0)),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+arrows(x0=zpbp,y0=zp.means,y1=zp.means-zp.sem,angle=90,length=0.1,lwd=1)
+arrows(x0=zpbp,y0=zp.means,y1=zp.means+zp.sem,angle=90,length=0.1,lwd=1)
 
+nutrANOVA<-aov(ZP~NUTS,data=ROYZOOP)
+summary(nutrANOVA)
+TukeyHSD(nutrANOVA)
 
 
 
@@ -309,13 +345,15 @@ Using the R code chunk below, do the following:
 ***Question 8***: How do you interpret the ANOVA results relative to the regression results?
 Do you have any concerns about this analysis?
 
-> ***Answer 8***:
+> ***Answer 8***: Okay, now we're doing a categorical analysis. Using chosen breakpoints, can we detect categories of nutrient amt that are associated with different [zooplankton]? Yes, there is a difference between the high and low nutr treatments. There is a difference between high and medium nutrient treatments. We could not detect a difference in [zooplankton] between medium and low nutr trmtnts.       Concerns: Welp, the residuals look a bit better than for the regression, but not perfect. More concerning to me is that the L, M, H cutoffs are arbitrary. It is possible that the scientists had good justification for selecting the cutoffs that they did. Perhaps this was done by looking for "natural breaks" in the dataset. Still, I would prefer my categories to be @truly@ @categorical@.
 
 
 Using the R code chunk below, use the diagnostic code provided in the handout to determine if our data meet the assumptions of ANVOA (similar to regression). 
 
 ```{r}
-
+par(mfrow=c(2,2),mar=c(5.1,4.1,4.1,2.1))
+plot(nutrANOVA)
+#as I mentioned above, the resids look a little better than for the rgrssn
 ```
 
 ## SYNTHESIS: SITE-BY-SPECIES MATRIX
@@ -345,11 +383,55 @@ The remaining columns of data refer to the biomass (µg/L) of different zooplank
 ***Question 9***: With the visualization and statistical tools that we learned about in the Week 1 Handout, use the site-by-species matrix to assess whether and how different zooplankton taxa were responsible for the total biomass (ZP) response to nutrient enrichment. Describe what you learned below in the "Answer" section and include appropriate code in the R chunk.
 
 ```{r}
+m9<-as.matrix(read.table("data\\zoops.txt",sep="\t",header=TRUE))
+m92<-factor(m9$NUTS,levels=c("L","M","H"))
+m9num<-m9[,3:11]
+zp.means.vect<-c(seq(1,1,1))
+#for (i in seq(3,11,1)){
+#  zp.means.vect[i]<-tapply(m9[,i],m9[,2],mean)
+#}
+#for (i in names(m9)){
+#  append(zp.means.vect, tapply(m9$i,m9$NUTS,mean))
+#}
+#for (i in seq(1,9,1)){
+#  temp<-tapply(m9[,i+2],m9[,2],mean)
+#  print(temp)
+#  append(zp.means.vect, c(temp))
+#}
 
-
-
+zpsp3<-tapply(m9[,3],m92,mean)
+zpsp4<-tapply(m9[,4],m92,mean)
+zpsp5<-tapply(m9[,5],m92,mean)
+zpsp6<-tapply(m9[,6],m92,mean)
+zpsp7<-tapply(m9[,7],m92,mean)
+zpsp8<-tapply(m9[,8],m92,mean)
+zpsp9<-tapply(m9[,9],m92,mean)
+zpsp10<-tapply(m9[,10],m92,mean)
+zpsp11<-tapply(m9[,11],m92,mean)
+zpbp3<-barplot(zpsp3,ylim=c(0,(max(zpsp3*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp4<-barplot(zpsp4,ylim=c(0,(max(zpsp4*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp5<-barplot(zpsp5,ylim=c(0,(max(zpsp5*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp6<-barplot(zpsp6,ylim=c(0,(max(zpsp6*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp7<-barplot(zpsp7,ylim=c(0,(max(zpsp7*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp8<-barplot(zpsp8,ylim=c(0,(max(zpsp8*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp9<-barplot(zpsp9,ylim=c(0,(max(zpsp9*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp10<-barplot(zpsp10,ylim=c(0,(max(zpsp10*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
+zpbp11<-barplot(zpsp11,ylim=c(0,(max(zpsp11*1.2))),pch=15,cex=1.25,las=1,cex.lab=1.4,cex.axis=1.25,xlab="nutrient supply",ylab="[zooplankton biomass] (mg/L)",names.arg=c("low",'medium','high'))
 
 ```
+> I learned that for loops in R make me cry.
+> I learned that I do not know how to append to a vector in R and I still couldn't figure it out after a couple hours on stackoverflow.
+> I learned that brute force works with only 9 taxa.
+> [CAL] didn't have a clear pattern.
+> Similar pattern for DIAP. in both these clades the total [] isn't very high, <100 mg/L
+> For CYCL there was no clear visually-detectable [zoop] response to [N]
+> Similarly for BOSM; moreover, its extremely low []s implies that it did not affect the overall pattern very much
+> SIMO the expected trend, with lowest [zoop] for low [N], and high for high. Too there is are up to ~700 mg/L SIMO, so this guy is substantive contributor to the obsvd pattern.
+> CERI also fits the expectation pattern, though its []s are ~25% of SIMO's
+> [NAUP] is too low for me to care
+> ditto for DLUM
+> [CHYD]s are as much as 5000 mg/L, so it should be driving the overall pattern we saw in the correlation. Its []s do indeed corroborate the pattern, a positive correlation.
+
 
 ## SUBMITTING YOUR ASSIGNMENT
 Use Knitr to create a PDF of your completed Week1_Assignment.Rmd document, push the repo to GitHub, and create a pull request.
