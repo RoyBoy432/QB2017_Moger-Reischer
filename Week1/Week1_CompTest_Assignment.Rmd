@@ -1,6 +1,6 @@
 ---
 title: "Week 1 Assignment: R Test"
-author: "Roy Moger-Reischer"
+author: "Roy Z Moger-Reischer"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 ---
@@ -50,6 +50,3 @@ info <- unname(c(Sys.info()[6],
           system("git --version", intern = TRUE)))
 info
 ```
-#[1] "Roy"                          "windows"                      "Windows"                     
-#[4] ">= 8 x64"                     "R version 3.3.2 (2016-10-31)" "RStudio"                     
-#[7] "git version 2.9.3.windows.1" 

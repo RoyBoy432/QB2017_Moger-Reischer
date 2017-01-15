@@ -1,6 +1,6 @@
 ---
 title: "Week 1 Assignment: Basic R"
-author: "Roy Z Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
+author: "Roy Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -51,7 +51,7 @@ In the R code chunk below, please provide the code to:
 ```{r}
 rm(list=ls())
 getwd()
-#setwd("~/GitHub/QB2017_Moger-Reischer/Week1")
+setwd("~/GitHub/QB2017_Moger-Reischer/Week1")
 #later, on my own computer
 setwd("C:\\Users\\rmoge\\GitHub\\QB2017_Moger-Reischer\\Week1")
 
@@ -184,7 +184,7 @@ In the R code chunk below, do the following:
 2) Remove the last row of matrix `m`.
 
 ```{r}
-n<-m[ ,c(1:2,4:5)]
+n<-m[ ,c(1:2,:4:5)]
 m<-m[ ,c(1:4)]
 ```
 
@@ -250,7 +250,7 @@ With the Pearson's method, is there evidence for false discovery rate due to mul
 
 > ***Answer 5***: 1> Not very sensitive. The results were not qualitatively different between the two types of tests. I did notice that P-values tended to be larger in the non-parametric test. IDK if my reasoning is ironclad, but it makes subjective sense bc I would expect the nonparametric test to have less power...
 > 2> I would use the nonparametric methods for chl a corrlns, bc the chl a datapoints were positively skewed.
-> 3> A little, but the FDR-adjusted P-values aren't much larger than unadjusted values. 4> It's useful when you're running a LOT of tests, e.g. evaluating SNP data such that you have ~1,000,000 variable sites and are testing for significance at each. You'd expect 50,000 false positive SNPs due to chance. So your chance of having ONE false positive is clearly NOT 5% once you're running multiple tests. So FDR more or less divides how many significant datapoints you expect-due-to-chance-alone by how many significant datapoints were observed. The MOST-significant datapoint doesn't get adjusted; the second-most signif value gets multiplied by (number_of_tests)/(number_of_tests - 1). If it is still < 0.05, then it is stiff signif after the FDR adjustment.    <-- or something like that.
+> 3> A little, but the FDR-adjusted P-values aren't much larger than unadjusted values. 4> It's useful when you're running a LOT of tests, e.g. evaluating SNP data \ni you have ~1,000,000 variable sites and are testing for significance at each. You'd expect 50,000 false positive SNPs due to chance. So your chance of having ONE false positive is clearly NOT 5% once you're running multiple tests. So FDR more or less divides how many significant datapoints you expect-due-to-chance-alone by how many significant datapoints were observed. The MOST-significant datapoint doesn't get adjusted; the second-most signif value gets multiplied by (number_of_tests)/(number_of_tests - 1). If it is still < 0.05, then it is stiff signif after the FDR adjustment.    <-- or something like that.
 
 
 In the R code chunk below, use the `corrplot` function in the *corrplot* package to produce the ellipse correlation plot in the handout.
@@ -383,9 +383,7 @@ The remaining columns of data refer to the biomass (µg/L) of different zooplank
 ***Question 9***: With the visualization and statistical tools that we learned about in the Week 1 Handout, use the site-by-species matrix to assess whether and how different zooplankton taxa were responsible for the total biomass (ZP) response to nutrient enrichment. Describe what you learned below in the "Answer" section and include appropriate code in the R chunk.
 
 ```{r}
-#m9<-as.matrix(read.table("data\\zoops.txt",sep="\t",header=TRUE))
-
-m9<-(read.table("data\\zoops.txt",sep="\t",header=TRUE))
+m9<-as.matrix(read.table("data\\zoops.txt",sep="\t",header=TRUE))
 m92<-factor(m9$NUTS,levels=c("L","M","H"))
 m9num<-m9[,3:11]
 zp.means.vect<-c(seq(1,1,1))
