@@ -38,7 +38,9 @@ In the R code chunk below, please provide the code to:
 rm(list=ls())
 getwd()
 setwd("~/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
-
+setwd("/Users/rzmogerr/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
+install.packages("vegan")
+require(vegan)
 
 ```
 
@@ -49,8 +51,9 @@ In the R code chunk below, do the following:
 2) Display the structure of the dataset (if the structure is long, use `max.level=0` to show just basic information).
 
 ```{r}
-
-
+data(BCI)
+str(BCI) #okay, this is something new I learned, should make a note
+dim(BCI)
 ```
 
 ## 3) SPECIES RICHNESS
@@ -69,17 +72,18 @@ In the R code chunk below, do the following:
 
 ```{r}
 
-# S.obs <- function(   ){
-#   rowSums(     ) * 
-#   }
-
+S.obs <- function(x=""   ){
+   rowSums(x>0) *1 
+}#for each row x, take the sum of columns for whcih x > 0
+S.obs(BCI) #now creates a vector with 50 row sums---one sum for each row (site) in that data set
+specnumber(BCI)
 ```
 
 ***Question 1***: Does `specnumber()` from `vegan` return the same value for observed richness in `site1` as our function `S.obs`?
 What is the species richness of the first 4 sites (i.e., rows) of the BCI matrix?
 
 > ***Answer 1***:
-
+> yes, for both richness was 93
 
 
 ### Coverage. How Well Did You Sample Your Site?
@@ -91,8 +95,21 @@ In the R code chunk below, do the following:
 2. Use that function to calculate coverage for all sites in the BCI matrix.
 
 ```{r}
+#Good's coverage
+C<-function(x=""){
+  1- (rowSums(x==1)/rowSums(x))
+}
+C(BCI)
 
-
+xC<-function(x=""){
+  (rowSums(x==1))
+}
+C(BCI)
+xC(BCI)
+yC<-function(x=""){
+  (rowSums(x))
+}
+yC(BCI)
 ```
   
 ***Question 2***: Answer the following questions about coverage:
@@ -103,13 +120,13 @@ c.  What portion of taxa in `site1` were represented by singletons?
 d.  Make some observations about coverage at the BCI plots.
 
 > ***Answer 2a***:  
-
+> 0 through 1. If every sp. is a singleton, then Good's Coverage is 0. If there are no singletons, Good's Coverage is 1.
 > ***Answer 2b***:  
-
+> In this case C=0. We would conclude that a lot more sampling needs to be done. We have only sampled singletons so far.
 > ***Answer 2c***:  
-
+> By running the xC function, I see that there are 31 singletons. I know there are 225 spp. Therefore 31/225 = 0.1377778
 > ***Answer 2d***:  
-
+> The sites are well-sampled. Typically less than 10% of the spp. are represented by singletons. Site 23 has is near the low end of coverage (13% individuals are singletons); site 8 is near the best coverage (~6% of individuals are singeltons)
 
 ### Estimated Richness
 
@@ -126,11 +143,15 @@ In the R code chunk below, do the following:
 5. Calculate the coverage at that particular site
 
 ```{r}
+soilbac <- read.table("data/soilbac.txt", sep = "\t", header = TRUE, row.names = 1)
+soilbac.t <- as.data.frame(t(soilbac))#make a transposed version of the data
+soilbac1<-s<-soilbac.t[1,]#look at a single site. I'm make an assumption that 3. above means "at a given site"
+#can only use Chao estimators on abundance, not relative abundance, data
 
-
-
-
-
+#For #4. above, we use the 
+soilbac1Richness<-S.obs(soilbac1)
+soilbac1Coverage<-C(soilbac1)
+yC(soilbac1)
 
 ```
 
@@ -141,11 +162,11 @@ b.  What is the observed richness of `soilbac1`?
 c.  How does coverage compare between the BCI sample (`site1`) and the KBS sample (`soilbac1`)?
 
 > ***Answer 3a***:  
-
+> From yC function I see that there were 2119 individuals.
 > ***Answer 3b***: 
-
+> Observed richness was 1074.
 > ***Answer 3c***:  
-
+> Coverage was lower in the KBS sample. There was a higher proportion of individuals that were singletons.
 
 ### Richness Estimators
 
@@ -161,10 +182,36 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+S.chao1<- function(x=""){
+  S.obs(x)+(sum(x==1)^2 / (2*sum(x==2)))
+}
 
+S.chao2<-function(site="",SbyS=""){
+  SbyS=as.data.frame(SbyS)
+  x=SbyS[site,]
+  SbyS.pa<-(SbyS>1)*1
+  Q1=sum(colSums(SbyS.pa)==1)
+  Q2=sum(colSums(SbyS.pa)==2)
+  S.chao2 = S.obs(x) + (Q1^2)/(2 * Q2)
+  return(S.chao2)
+}
+#go back through the handout and make sure you understand this
 
-
-
+S.ace<-function(x="",thresh=10){
+  x<-x[x>0]#exclude zero abundance 
+  S.abund<-length(which(x>thresh))
+  S.rare <-length(which(x<=thresh))
+  singlt <-length(which(x==1))
+  N.rare <-sum(x[which(x<=thresh)])
+  C.ace  <-1-(singlt/N.rare)
+  i      <-c(1:thresh)
+  count<-function(i,y){length(y[y==i])}
+  a.1    <-sapply(i, count, x)
+  f.1    <-(i*(i-1))*a.1
+  G.ace  <-(S.rare/C.ace)*sum(f.1)/(N.rare*(N.rare-1))
+  S.ace  <- S.bund + (S.rare/C.ace) + (singlt/C.ace)*max(G.ace,0)
+  return(S.ace)
+}
 
 
 
