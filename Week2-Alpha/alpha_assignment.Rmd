@@ -40,7 +40,7 @@ getwd()
 #setwd("~/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
 #setwd("/Users/rzmogerr/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
 setwd("C:\\Users\\rmoge\\GitHub\\QB2017_Moger-Reischer\\Week2-Alpha")
-install.packages("vegan")
+#install.packages("vegan")
 require(vegan)
 
 ```
@@ -122,10 +122,13 @@ d.  Make some observations about coverage at the BCI plots.
 
 > ***Answer 2a***:  
 > 0 through 1. If every sp. is a singleton, then Good's Coverage is 0. If there are no singletons, Good's Coverage is 1.
+
 > ***Answer 2b***:  
 > In this case C=0. We would conclude that a lot more sampling needs to be done. We have only sampled singletons so far.
+
 > ***Answer 2c***:  
 > By running the xC function, I see that there are 31 singletons. I know there are 225 spp. Therefore 31/225 = 0.1377778
+
 > ***Answer 2d***:  
 > The sites are well-sampled. Typically less than 10% of the spp. are represented by singletons. Site 23 has is near the low end of coverage (13% individuals are singletons); site 8 is near the best coverage (~6% of individuals are singeltons)
 
@@ -164,8 +167,10 @@ c.  How does coverage compare between the BCI sample (`site1`) and the KBS sampl
 
 > ***Answer 3a***:  
 > From yC function I see that there were 2119 individuals.
+
 > ***Answer 3b***: 
 > Observed richness was 1074.
+
 > ***Answer 3c***:  
 > Coverage was lower in the KBS sample. There was a higher proportion of individuals that were singletons.
 
@@ -442,10 +447,15 @@ print (diversity(site1, "simp"))
 Do they agree? If so, why? If not, why? What can you infer from the results.
 
 > ***Answer 7***:
+
 > Evar is normalized to vary between 0 and 1.
+
 > Shannon's is not on that scale, so it is hard to compare them directly.
+
 > The Internet indicated that Shannon's typically ranges 1.5 to 3.5, so it could be posited that Shannon's is implying a higher evenness than Evar is.
-> Too, Shannon's is a diversity index, while Evar measure evenness.
+
+> Too, Shannon's is a diversity index, while Evar measures evenness.
+
 > So Evar is intended to be independent of richness, while Shannon's is intended to depend on richness in its calculation.
 
 ### Fisher's $\boldsymbol\alpha$
@@ -470,7 +480,9 @@ print (Fisher)
 ***Question 8***: How is Fisher's $\boldsymbol\alpha$ different from $E_{H'}$ and $E_{var}$? What does Fisher's $\boldsymbol\alpha$ take into account that $E_{H'}$ and $E_{var}$ do not?
 
 > ***Answer 8***:
-> Fisher's \alpha is an estimator of diversity, much like Chao estimator estimate richness (in contradistinction to observed richness). The fact that Fisher's and invD will converge at much larger number for abundance and richnes paralelles the idea that if we sampled a community (assuming there were singletons or doubletons) absolutely completely, then a Chao estimator would be equal to the observed richness.     Thus, Fisher's takes into account the incompleteness of our sampling (and the sampling error/ stochasticity that can arise from it). Too, Evar is different because it only measures evenness, not diversity.
+> Fisher's alpha is an estimator of diversity, much like Chao estimator estimate richness (in contradistinction to observed richness). The fact that Fisher's and invD will converge at much larger number for abundance and richnes paralelles the idea that if we sampled a community (assuming there were singletons or doubletons) absolutely completely, then a Chao estimator would be equal to the observed richness.
+
+> Thus, Fisher's takes into account the incompleteness of our sampling (and the sampling error/ stochasticity that can arise from it). Too, Evar is different because it only measures evenness, not diversity.
 
 ##6) MOVING BEYOND UNIVARIATE METRICS OF $\alpha$ DIVERSITY
 
@@ -494,8 +506,8 @@ In the R code chunk below, please do the following:
 3. Plot the results of the `radfit()` function using the code provided in the handout.
 
 ```{r}
-RACfit<-radfit(site1)
-print (RACfit)
+RACresults<-radfit(site1)
+print (RACresults)
 plot.new()
 plot(RACresults, las = 1, cex.lab = 1.4, cex.axis = 1.25)
 
@@ -512,17 +524,19 @@ b) Can we make any inferences about the forces, processes, and/or mechanisms inf
 
 > ***Answer 9a***:  
 > The Mandelbrot model has the lowest AIC. The plot corroborates the idea that this model is the best fit for the data: the Mandelbrot curve passes through the centre of most of the (y-axis) abundances. This is true for all of the abundances.
+
 > ***Answer 9b***:
-> I'm not sure. The model has been applied because it does a good job of fitting and predicting patterns, rather than, as far as I am aware, arising from some ecological theory that was posited to explain some phenomenon first. If there is a proportional relationship between rank-abundance and abundance, I don't think this would fit a distribution in which the vast majority of taxa are rare (which is, to my knowledge, a common pattern in communities in the wild). However, from the plot we do see that there is a very large The Mandelbrot method might tells us something about the evenness in the community, but I don't know right now how to access the \beta parameter. At a coarse scale, knowing whether the \beta parameter is positive or negative could tell us whether there is high or low evenness among the most-abundant spp. Qualitatively, by looking at the graph, I would predict that the \beta parameter is negative because there seems to be less evenness among the most-abundant spp. than among the least abundant spp.
+> I'm not sure. The model has been applied in biology because it does a good job of fitting and predicting patterns, rather than, as far as I am aware, arising from some ecological theory that was posited *first* to explain some phenomenon. If there is a proportional relationship between rank-abundance and abundance, I don't think this would fit a distribution in which the vast majority of taxa are rare (which is, to my knowledge, a common pattern in communities in the wild). However, from the plot we do see that there is a very large. The Mandelbrot method might tells us something about the evenness in the community, but I don't know right now how to access the beta parameter. At a coarse scale, knowing whether the beta parameter is positive or negative could tell us whether there is high or low evenness among the most-abundant spp. Qualitatively, by looking at the graph, I would predict that the beta parameter is negative because there seems to be less evenness among the most-abundant spp. than among the least abundant spp.
 
 ***Question 10***: Answer the following questions about the preemption model:
 a.  What does the preemption model assume about the relationship between total abundance (*N*) and total resources that can be preempted?
 b.  Why does the niche preemption model look like a straight line in the RAD plot?
 
 > ***Answer 10a***:  
-> I think preemption model assumes that there is an infinite amount of resources. \alpha is not dependent upon N, it is just another parameter of the model that can be set by the modeler.
+> I think the preemption model assumes that there is an infinite amount of resources. Fisher's alpha is not dependent upon N, it is just another parameter of the model that can be set by the modeler.
+
 > ***Answer 10b***:
-> I believe it is because the decay is exponential, and the y-axis is a log-scale (at least, I make the assumption that there is a log-transformation in vegan's radfit function, similar to the log transformation we did just prior to Question #5. I was having difficulty wrapping my head around this, so I wrote a python script to try to figure out what was going on (see 10b.py). I played around with it until I saw that the log transformation caused the differences in predicted abundance between each pair of rand-abundances [r, r+1] were equal.
+> I believe it is because the decay is exponential, and the y-axis is a log-scale---there appears to be a log-transformation in vegan's radfit function, similar to the log transformation we did just prior to Question #5. I was having difficulty wrapping my head around this, so I wrote a script to try to figure out what was going on (see 10b.py). I played around with it until I saw that the log transformation caused the differences in predicted abundance between each pair of rank-abundances [r, r+1] were equal.
 
 
 ***Question 11***: Why is it important to account for the number of parameters a model uses when judging how well it explains a given set of data?
@@ -550,8 +564,9 @@ To address this homework question, use the R function **hist()** to plot the fre
 plotme<-as.numeric(site1)
 #print (plotme)
 #?hist
-hist(plotme, xlab="Abundance", ylab="Number of Taxa", main="Histogram of Taxa Abundances", breaks=30)
-#There are very few taxa with abundances larger than 5. More than ~67% of taxa have an abundance equal to 1. As has been noted, there are many more rare taxa than there are common taxa in this community.
+hist(plotme, xlab="Abundance", ylab="Number of Taxa", main="Histogram of Taxon Abundances", breaks=30)
+#There are very few taxa with abundances larger than 5. More than ~67% of taxa have an abundance equal to 1.
+#As has been noted, there are many more rare taxa than there are common taxa in this community.
 ```
 
 3.  We asked you to find a biodiversity dataset with your partner.
@@ -560,6 +575,60 @@ Load that dataset.
 How many sites are there?
 How many species are there in the entire site-by-species matrix?
 Any other interesting observations based on what you learned this week?
+
+```{r}
+#setwd("C:\\Users\\rmoge\\GitHub\\QB2017_DivPro")
+
+plant<-read.csv("C:\\Users\\rmoge\\GitHub\\QB2017_DivPro\\Data\\HF_plants.csv")
+print(dim(plant))
+#There are 96 rows. This means there are 96 "sites"" overall.
+#However, sites were resampled yearly each year for 4 years. Too, there were four different treatments.
+#Thus there are 96/4/4 = 6 replicate sites for each treatment for each year.
+#There are 43 columns.
+print(names(plant))
+#Three columns correspond to year, plot, and treatment. The other 40 are spp.
+#install.packages("dplyr")
+require(dplyr)
+
+C_2009_plant<-filter(plant, treatment==1, year==2009)
+C_2009_plant<-C_2009_plant[4:43]
+print(C_2009_plant)  
+#class(plant.matrix.C)
+#So, for each year & treatment combination, there are 6 sites.
+print(S.obs(C_2009_plant))
+#richness can vary a lot between plots: ranges 11 to 20 in these six plots.
+
+#I will plot a histogram for the first site
+plotme2<-as.numeric(C_2009_plant[1,])
+print(plotme2)
+hist(plotme2, xlab="Abundance", ylab="Number of Taxa", main="Histogram of Taxon Abundances", breaks=30)
+#once again, many spp are rare, few are abundant
+
+C09_Chao2<-c(1:6)
+for (i in c(1:6)){
+  temp<-(S.chao2(i, C_2009_plant))
+  print(temp)
+}
+#estimated richness varies almost as much among these sites, here ranging from 12 to 21.
+#estimated richness values are not much larger than observed richness,
+#which indicated that the sites were sampled thoroughly.
+C09_H<-c(1:6)
+for (i in c(1:6)) {
+  temp<-ShanH(C_2009_plant[i,])
+  C09_H[i]<-temp
+}
+print(C09_H)
+#Note that the plots with highest richness don't correspond very well to those with high Shannon's diversity
+
+#Now I would like to draw a rank-abundance curve for the first site
+C09_1_RAC_vector<-radfit(C_2009_plant[1,])
+print(C09_1_RAC_vector)
+plot(C09_1_RAC_vector, las = 1, cex.lab = 1.4, cex.axis = 1.25)
+#Lowest AIC model is preemption, although for Mandelbrot DeltaAIC=1.568,
+#which may not be enough difference to distinguish between the two models definitively.
+
+```
+
 
 ## SUBMITTING YOUR ASSIGNMENT
 Use Knitr to create a PDF of your completed alpha_assignment.Rmd document, push it to GitHub, and create a pull request.
