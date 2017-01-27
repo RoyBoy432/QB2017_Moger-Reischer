@@ -1,6 +1,6 @@
 ---
 title: "Assignment: Among Site (Beta) Diversity"
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Roy Z Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -26,7 +26,7 @@ After completing this exercise you will know how to:
 Space for your answer is provided in this document and indicated by the ">" character.
 If you need a second paragraph be sure to start the first line with ">".
 5. Before you leave the classroom, **push** this file to your GitHub repo.
-6. When you are done wit the Assignment, **Knit** the text and code into a html file.
+6. When you are done with the Assignment, **Knit** the text and code into a html file.
 7. After Knitting, please submit the completed Assignment by creating a **pull request** via GitHub.
 Your pull request should include this file *beta_assignment.Rmd* and the html output of `Knitr` (*beta_assignment.html*).
 
@@ -43,9 +43,17 @@ In the R code chunk below, provide the code to:
 4. load the `vegan` R package (be sure to install if needed).  
 
 ```{r}
-
-
-
+rm(list = ls())
+getwd()
+setwd("/Users/rzmogerr/GitHub/QB2017_Moger-Reischer/Week3-Beta")
+#I'll load all of the packages, following the style of the handout
+package.list <- c('vegan', 'ade4', 'viridis', 'gplots', 'BiodiversityR', 'indicspecies')
+for (package in package.list) {
+  if (!require(package, character.only=T, quietly=T)) {
+    install.packages(package)
+    library(package, character.only=T)
+  }
+}
 
 ```
 
@@ -57,10 +65,12 @@ In the R code chunk below, do the following:
 2. explore the structure of the dataset.
 
 ```{r}
-
-
-
-
+data(doubs)
+str(doubs)
+str(doubs$env)
+str(doubs, max.level=1)
+head(doubs)
+print(head(doubs$fish))
 ```
 
 ***Question 1***:  Describe some of the attributes of the `doubs` dataset.  
@@ -70,8 +80,13 @@ b.  How many fish species are there in the `doubs` dataset?
 c.  How many sites are in the `doubs` dataset?
 
 > ***Answer 1a***:  
+> It appears that doubs is a list of 4 substantial objects.
+
 > ***Answer 1b***:  
+> There are 27 columns in the fish dataframe. Thus, 27 spp.
+
 > ***Answer 1c***:  
+> There are 30 rows in that site-by-species matrix. Thus 30 sites.
 
 ### Visualizing the Doubs River Dataset
 
@@ -82,8 +97,13 @@ b.  How does Brown Trout (*Salmo trutta*) abundance vary along the sampled reach
 c.  What do these patterns say about the limitations of using richness when examining patterns of biodiversity?
 
 > ***Answer 2a***:  
+> It is perhaps a generalization, but site tend to exhibit higher richness near mid-stream and downstream sites, compared to upstream.
+
 > ***Answer 2b***:  
+> Brown trout is more abundant at upstream sites (maybe brown trout is a weak competitor?)
+
 > ***Answer 2c***:  
+> Richness is a measure of numbers of different species. It doesn't say anything about the abundances of those species. Moreover, richness doesn't give any information about any of the individual species; rather, it gives information about the species as an aggregate. For example, even though brown trout are not present downstream (and therefore not contributing to richness), this could be a species that thrives when competitor species are absent.
 
 ## 3) QUANTIFYING BETA-DIVERSITY
 
@@ -93,11 +113,38 @@ In the R code chunk below, do the following:
 2. use this function to analyze various aspects of $\beta$-diversity in the Doubs River.  
 
 ```{r}
+beta.w <- function(site.by.species = "", sitenum1 = "", sitenum2 = "", pairwise = FALSE){
+#  ONLY if we specify pairwise as TRUE, do this:
+  if (pairwise == TRUE){
+      # As a check, let's print an error if we do not provide needed arguments
+    if (sitenum1 == "" | sitenum2 == "") {
+      print("Error: please specify sites to compare")
+      return(NA)}
+# If our function made it this far, let's calculate pairwise beta diversity
+    site1 = site.by.species[sitenum1,] # Select site 1
+    site2 = site.by.species[sitenum2,] # Select site 2
+    site1 = subset(site1, select = site1 > 0) # Removes absences
+    site2 = subset(site2, select = site2 > 0) # Removes absences
+    gamma = union(colnames(site1), colnames(site2)) # Gamma species pool
+    s = length(gamma) # Gamma richness
+    a.bar = mean(c(specnumber(site1), specnumber(site2))) # Mean sample richness
+    b.w = round(s/a.bar - 1, 3)
+    return(b.w)
+  }
+  #if there is no pairwise specification
+  else{
+  SbyS.pa <- decostand(site.by.species, method = "pa") # convert to presence-absence
+  S <- ncol(SbyS.pa[,which(colSums(SbyS.pa) > 0)]) # number of species in region
+  a.bar <- mean(specnumber(SbyS.pa)) # average richness at each site
+  b.w <- round(S/a.bar, 3)
+  print(a.bar)
+  return(c(b.w, a.bar, S))#also return alpha, and gamma (global richness)
+}
+}
 
-
-
-
-
+myab1<-beta.w(doubs$fish)
+my2<-beta.w(doubs$fish, 1, 2,pairwise=TRUE)
+my10<-beta.w(doubs$fish, 1, 10,pairwise=TRUE)
 
 
 
@@ -112,13 +159,29 @@ b.  Is the fish assemblage at site 1 more similar to the one at site 2 or site 1
 c.  Using your understanding of the equation $\beta_{w} = \gamma/\alpha$, how would your interpretation of $\beta$ change if we instead defined beta additively (i.e., $\beta = \gamma - \alpha$)?
 
 > ***Answer 3a***:  
+> We can use gamma = (alpha)(beta) = (12.5)(2.16), when alpha is the average richness of that at all the sites. Thus, alpha is larger than beta, and contributes more to gamma.
+> myab1<-beta.w(doubs$fish)
+> myab1
+[1]  2.16 12.50 27.00
+
 > ***Answer 3b***:  
+> my2<-beta.w(doubs$fish, 1, 2,pairwise=TRUE)
+> my10<-beta.w(doubs$fish, 1, 10,pairwise=TRUE)
+> my2
+>[1] 0.5
+> my10
+>[1] 0.714
+> This tells me that turnover is greater between site 1 and site 10 than it is between site 1 and site 2.
+
 > ***Answer 3c***:  
+> in this case, we would have beta > alpha (alpha = 12.5, beta=14.5), and the interpretation could be that alpha and beta contribute about equally to gamma.
+
 
 ### The Resemblance Matrix
 In order to quantify $\beta$-diversity for more than two samples, we need to introduce a new primary ecological data structure: the **Resemblance Matrix**. 
 
 ***Question 4***: How do incidence- and abundance-based metrics differ in their treatment of rare species?
+> An incidence-based matrix naturally treats rare species equally---that is, where an species is has high or low richness, it still counts as a 1 (in contradistinction to a 0).     For an abundance-based matrix there is a possiblity that species with higher richness could be weighted differently than spp. represented by only a few individuals.
 
 > ***Answer 4***:  
 
@@ -130,12 +193,19 @@ In the R code chunk below, do the following:
 4. construct a resemblance matrix based on Bray-Curtis Distance ("fish.db").  
 
 ```{r}
+fish <- doubs$fish#initialie the variable
+fish <- fish[-8, ] # Remove site 8 from data bc it is empty
+
+# Calculate Bray-Curtis
+fish.db <- vegdist(fish, method = "bray")
+# Calculate Sørensen
+fish.ds <- vegdist(fish, method = "bray", binary = TRUE)
+fish.db
+fish.ds
 
 
-
-
-
-
+fish.db <- vegdist(fish, method = "bray", upper = TRUE, diag = TRUE)
+fish.ds <- vegdist(fish, method = "bray", upper = TRUE, binary = TRUE, diag = TRUE)
 
 
 ```
@@ -146,7 +216,9 @@ a. Does the resemblance matrix (`fish.db`) represent similarity or dissimilarity
 b. Compare the resemblance matrices (`fish.db` or `fish.ds`) you just created. How does the choice of the Sørensen or Bray-Curtis distance influence your interpretation of site (dis)similarity?
 
 > ***Answer 5a***:  
+> I wanted to use the numbers on the 1:1 diagonal to indicate which type of resemblance matrix. That is, if the resemblance of each site to itself is 1, it is a similarity matrix; if it is 0, the matrix measure dissimilarity. However, R didn't show that diagonal without specifying dag = TRUE. So I looked at the handout, where it is indicated that Bray-Curtis is a Dissimilarity metric. This makes sense, because the numerator is a difference. So if for a given site, variable in the numerator is subtracted from itself, the difference will equal 0, and the sum of the 0s will give a dissimilarity of 0.
 > ***Answer 5b***:
+> It was not easy to intuitively compare the matrices without using some sort of visualization. I couldn't detect major differences just by looking at the numerical outputs of those matrices. The two methods seemed to output comparable results.
 
 ## 4) VISUALIZING BETA-DIVERSITY
 
@@ -159,15 +231,9 @@ In the R code chunk below, do the following:
 3. use the `levelplot()` function to create a heatmap of fish abundances in the Doubs River.
 
 ```{r}
-
-
-
-
-
-
-
-
-
+library(viridis)
+order <- rev(attr(fish.db, "Labels"))#define a reversed order
+levelplot(as.matrix(fish.db)[, order], aspect = "iso", col.regions = plasma, xlab = "Doubs Site", ylab = "Doubs Site", scales = list(cex = 0.5), main = "Bray-Curtis Distance")
 
 ```
 
@@ -179,8 +245,9 @@ In the R code chunk below, do the following:
 2. plot your cluster analysis (use either `hclust` or `heatmap.2`). 
 
 ```{r} 
-
-
+fish.ward <- hclust(fish.db, method = "ward.D2")#now visualize phylogenetically
+par(mar = c(1, 5, 2, 2) + 0.1)#set up display settings
+plot(fish.ward, main = "Doubs River Fish: Ward's Clustering",ylab = "Squared Bray-Curtis Distance")#plot the tree
 
 
 
@@ -193,6 +260,9 @@ In the R code chunk below, do the following:
 ***Question 6***: Based on cluster analyses and the introductory plots that we generated after loading the data, develop an ecological hypothesis for fish diversity the `doubs` data set? 
 
 > ***Answer 6***: 
+> The plot of sites in x-y space indicated that there were spatial clusters in the sampling of sites: downstream; midstream; and Upsteam. There were a few sites that fell between the Upstream and the oxbow portion of Midstream. On the Ward's Clustering cluster analysis, there are 3 large closely clustered clades, and 1 smaller clade. I could hypothesize that these clades correspond to geographic locations along the stream from upstream to downstream. That is, fish communities tend to more closely resemble other fish communities which are physically closely together in terms of how far the stream flows between the communities' locations.
+> This hypothesis could be (in)validated by plotting the site identifier numbers on the x-y space map.
+> The clades are less visible on the heatmap.
 
 ### C.  Ordination
 
