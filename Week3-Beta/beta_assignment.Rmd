@@ -1,6 +1,6 @@
 ---
 title: "Assignment: Among Site (Beta) Diversity"
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Roy Z Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -26,7 +26,7 @@ After completing this exercise you will know how to:
 Space for your answer is provided in this document and indicated by the ">" character.
 If you need a second paragraph be sure to start the first line with ">".
 5. Before you leave the classroom, **push** this file to your GitHub repo.
-6. When you are done wit the Assignment, **Knit** the text and code into a html file.
+6. When you are done with the Assignment, **Knit** the text and code into a html file.
 7. After Knitting, please submit the completed Assignment by creating a **pull request** via GitHub.
 Your pull request should include this file *beta_assignment.Rmd* and the html output of `Knitr` (*beta_assignment.html*).
 
@@ -43,9 +43,17 @@ In the R code chunk below, provide the code to:
 4. load the `vegan` R package (be sure to install if needed).  
 
 ```{r}
-
-
-
+rm(list = ls())
+getwd()
+#setwd("/Users/rzmogerr/GitHub/QB2017_Moger-Reischer/Week3-Beta")
+#I'll load all of the packages, following the style of the handout
+package.list <- c('vegan', 'ade4', 'viridis', 'gplots', 'BiodiversityR', 'indicspecies')
+for (package in package.list) {
+  if (!require(package, character.only=T, quietly=T)) {
+    install.packages(package)
+    library(package, character.only=T)
+  }
+}
 
 ```
 
@@ -57,10 +65,12 @@ In the R code chunk below, do the following:
 2. explore the structure of the dataset.
 
 ```{r}
-
-
-
-
+data(doubs)
+str(doubs)
+str(doubs$env)
+str(doubs, max.level=1)
+head(doubs)
+print(head(doubs$fish))
 ```
 
 ***Question 1***:  Describe some of the attributes of the `doubs` dataset.  
@@ -70,8 +80,13 @@ b.  How many fish species are there in the `doubs` dataset?
 c.  How many sites are in the `doubs` dataset?
 
 > ***Answer 1a***:  
+> It appears that doubs is a list of 4 substantial objects.
+
 > ***Answer 1b***:  
+> There are 27 columns in the fish dataframe. Thus, 27 spp.
+
 > ***Answer 1c***:  
+> There are 30 rows in that site-by-species matrix. Thus 30 sites.
 
 ### Visualizing the Doubs River Dataset
 
@@ -82,8 +97,13 @@ b.  How does Brown Trout (*Salmo trutta*) abundance vary along the sampled reach
 c.  What do these patterns say about the limitations of using richness when examining patterns of biodiversity?
 
 > ***Answer 2a***:  
+> It is perhaps a generalization, but sites tend to exhibit higher richness near mid-stream and downstream sites, compared to upstream.
+
 > ***Answer 2b***:  
+> Brown trout is more abundant at upstream sites (maybe brown trout is a weak competitor?)
+
 > ***Answer 2c***:  
+> Richness is a measure of numbers of different species. It doesn't say anything about the abundances of those species. Moreover, richness doesn't give any information about any of the individual species; rather, it gives information about the species as an aggregate. For example, even though brown trout are not present downstream (and therefore not contributing to richness), this could be a species that thrives when competitor species are absent.
 
 ## 3) QUANTIFYING BETA-DIVERSITY
 
@@ -93,11 +113,38 @@ In the R code chunk below, do the following:
 2. use this function to analyze various aspects of $\beta$-diversity in the Doubs River.  
 
 ```{r}
+beta.w <- function(site.by.species = "", sitenum1 = "", sitenum2 = "", pairwise = FALSE){
+#  ONLY if we specify pairwise as TRUE, do this:
+  if (pairwise == TRUE){
+      # As a check, let's print an error if we do not provide needed arguments
+    if (sitenum1 == "" | sitenum2 == "") {
+      print("Error: please specify sites to compare")
+      return(NA)}
+# If our function made it this far, let's calculate pairwise beta diversity
+    site1 = site.by.species[sitenum1,] # Select site 1
+    site2 = site.by.species[sitenum2,] # Select site 2
+    site1 = subset(site1, select = site1 > 0) # Removes absences
+    site2 = subset(site2, select = site2 > 0) # Removes absences
+    gamma = union(colnames(site1), colnames(site2)) # Gamma species pool
+    s = length(gamma) # Gamma richness
+    a.bar = mean(c(specnumber(site1), specnumber(site2))) # Mean sample richness
+    b.w = round(s/a.bar - 1, 3)
+    return(b.w)
+  }
+  #if there is no pairwise specification
+  else{
+  SbyS.pa <- decostand(site.by.species, method = "pa") # convert to presence-absence
+  S <- ncol(SbyS.pa[,which(colSums(SbyS.pa) > 0)]) # number of species in region
+  a.bar <- mean(specnumber(SbyS.pa)) # average richness at each site
+  b.w <- round(S/a.bar, 3)
+  print(a.bar)
+  return(c(b.w, a.bar, S))#also return alpha, and gamma (global richness)
+}
+}
 
-
-
-
-
+myab1<-beta.w(doubs$fish)
+my2<-beta.w(doubs$fish, 1, 2,pairwise=TRUE)
+my10<-beta.w(doubs$fish, 1, 10,pairwise=TRUE)
 
 
 
@@ -112,13 +159,37 @@ b.  Is the fish assemblage at site 1 more similar to the one at site 2 or site 1
 c.  Using your understanding of the equation $\beta_{w} = \gamma/\alpha$, how would your interpretation of $\beta$ change if we instead defined beta additively (i.e., $\beta = \gamma - \alpha$)?
 
 > ***Answer 3a***:  
+> We can use gamma = (alpha)(beta) = (12.5)(2.16), where alpha is the average richness across all the sites. Alpha is larger than beta, and we can say alpha contributes more to gamma.
+
+> myab1<-beta.w(doubs$fish)
+
+> myab1
+[1]  2.16 12.50 27.00
+
 > ***Answer 3b***:  
+> my2<-beta.w(doubs$fish, 1, 2,pairwise=TRUE)
+
+> my10<-beta.w(doubs$fish, 1, 10,pairwise=TRUE)
+
+> my2
+
+> [1] 0.5
+
+> my10
+
+> [1] 0.714
+
+> This tells me that turnover is greater between site 1 and site 10 than it is between site 1 and site 2.
+
 > ***Answer 3c***:  
+> In this case, we would have beta > alpha (alpha = 12.5, beta=14.5), and the interpretation could be that alpha and beta contribute about equally to gamma.
+
 
 ### The Resemblance Matrix
 In order to quantify $\beta$-diversity for more than two samples, we need to introduce a new primary ecological data structure: the **Resemblance Matrix**. 
 
 ***Question 4***: How do incidence- and abundance-based metrics differ in their treatment of rare species?
+> An incidence-based matrix naturally treats rare species equally---that is, where an species is has high or low richness, it still counts as a 1 (in contradistinction to a 0).     For an abundance-based matrix there is a possiblity that species with higher richness could be weighted differently than spp. represented by only a few individuals.
 
 > ***Answer 4***:  
 
@@ -130,12 +201,19 @@ In the R code chunk below, do the following:
 4. construct a resemblance matrix based on Bray-Curtis Distance ("fish.db").  
 
 ```{r}
+fish <- doubs$fish#initialie the variable
+fish <- fish[-8, ] # Remove site 8 from data bc it is empty
+
+# Calculate Bray-Curtis
+fish.db <- vegdist(fish, method = "bray")
+# Calculate Sørensen
+fish.ds <- vegdist(fish, method = "bray", binary = TRUE)
+fish.db
+fish.ds
 
 
-
-
-
-
+fish.db <- vegdist(fish, method = "bray", upper = TRUE, diag = TRUE)
+fish.ds <- vegdist(fish, method = "bray", upper = TRUE, binary = TRUE, diag = TRUE)
 
 
 ```
@@ -146,7 +224,10 @@ a. Does the resemblance matrix (`fish.db`) represent similarity or dissimilarity
 b. Compare the resemblance matrices (`fish.db` or `fish.ds`) you just created. How does the choice of the Sørensen or Bray-Curtis distance influence your interpretation of site (dis)similarity?
 
 > ***Answer 5a***:  
+> I wanted to use the numbers on the 1:1 diagonal to indicate which type of resemblance matrix. That is, if the resemblance of each site to itself is 1, it is a similarity matrix; if it is 0, the matrix measure dissimilarity. However, R didn't show that diagonal without specifying dag = TRUE. I looked at the handout, where it is indicated that Bray-Curtis is a Dissimilarity metric. This makes sense, because the numerator is a difference. Therefore, if for a given site, variable in the numerator is subtracted from itself, the difference will equal 0, and the sum of the 0s will give a dissimilarity of 0.
+
 > ***Answer 5b***:
+> It was not easy to intuitively compare the matrices without using some sort of visualization. I couldn't detect major differences just by looking at the numerical outputs of those matrices. The two methods seemed to output comparable results.
 
 ## 4) VISUALIZING BETA-DIVERSITY
 
@@ -159,15 +240,9 @@ In the R code chunk below, do the following:
 3. use the `levelplot()` function to create a heatmap of fish abundances in the Doubs River.
 
 ```{r}
-
-
-
-
-
-
-
-
-
+library(viridis)
+order <- rev(attr(fish.db, "Labels"))#define a reversed order
+levelplot(as.matrix(fish.db)[, order], aspect = "iso", col.regions = plasma, xlab = "Doubs Site", ylab = "Doubs Site", scales = list(cex = 0.5), main = "Bray-Curtis Distance")
 
 ```
 
@@ -179,20 +254,23 @@ In the R code chunk below, do the following:
 2. plot your cluster analysis (use either `hclust` or `heatmap.2`). 
 
 ```{r} 
-
-
-
-
-
-
-
-
+fish.ward <- hclust(fish.db, method = "ward.D2")#now visualize phylogenetically
+par(mar = c(1, 5, 2, 2) + 0.1)#set up display settings
+plot(fish.ward, main = "Doubs River Fish: Ward's Clustering",ylab = "Squared Bray-Curtis Distance")#plot the tree
+#I like that this tree is not ultrametric
 
 ```
 
 ***Question 6***: Based on cluster analyses and the introductory plots that we generated after loading the data, develop an ecological hypothesis for fish diversity the `doubs` data set? 
 
 > ***Answer 6***: 
+> The plot of sites in x-y space indicated that there were spatial clusters in the sampling of sites: Downstream; Midstream; and Upsteam. There were a few sites that fell between the Upstream and the oxbow portion of Midstream. On the Ward's Clustering cluster analysis, there are 3 large closely clustered clades, and 1 smaller clade. I could hypothesize that these clades correspond to geographic locations along the stream from upstream to downstream. That is, fish communities tend to more closely resemble other fish communities which are physically closely together in terms of how far the stream flows between the communities' locations.
+
+> This hypothesis could be (in)validated by plotting the site identifier numbers on the x-y space map.
+
+> If the site numbers correspond 1 through 30 to sites most Upstream through most Downstream (and based on section 5A, I think this is true), then my hypothesis is somewhat supported: The cluster on the left is mostly Upstream sties; there is a small Midstream/Downstream clade of 3; on the right is a Midstream clade; in the middle-right is a Downstream clade.
+
+> The clades are less visible on the heatmap.
 
 ### C.  Ordination
 
@@ -207,14 +285,34 @@ In the R code chunk below, do the following:
 5. identify influential species and add species coordinates to PCoA plot.
 
 ```{r}
+fish.pcoa <- cmdscale(fish.db, eig = TRUE, k = 3)#do the PCoA
+str(fish.pcoa)
+explainvar1 <- round(fish.pcoa$eig[1] / sum(fish.pcoa$eig), 3) * 100#for each of the first three eigenvalues, assess what proportion of variance it explains
+explainvar2 <- round(fish.pcoa$eig[2] / sum(fish.pcoa$eig), 3) * 100
+explainvar3 <- round(fish.pcoa$eig[3] / sum(fish.pcoa$eig), 3) * 100
+sum.eig <- sum(explainvar1, explainvar2, explainvar3)#total amt explained in these 3 dimensions
 
+par(mar = c(5, 5, 1, 2) + 0.1)#structure the figure output
+# Initiate Plot
+plot(fish.pcoa$points[ ,1], fish.pcoa$points[ ,2], ylim = c(-0.2, 0.7), xlab = paste("PCoA 1 (", explainvar1, "%)", sep = ""), ylab = paste("PCoA 2 (", explainvar2, "%)", sep = ""), pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+# Add Axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+# Add Points & Labels
+points(fish.pcoa$points[ ,1], fish.pcoa$points[ ,2],
+pch = 19, cex = 3, bg = "#bc8d4f", col = "#bc8d4f")
+text(fish.pcoa$points[ ,1], fish.pcoa$points[ ,2],
+labels = row.names(fish.pcoa$points))
+#Now IDfy the most influential spp
+fishREL <- fish
+  for(i in 1:nrow(fish)){
+    fishREL[i, ] = fish[i, ] / sum(fish[i, ])
+    }
 
-
-
-
-
-
-
+fish.pcoa <- add.spec.scores(fish.pcoa,fishREL,method = "pcoa.scores")
+text(fish.pcoa$cproj[ ,1], fish.pcoa$cproj[ ,2],labels = row.names(fish.pcoa$cproj), col = "#802944")
 
 ```
 
@@ -224,10 +322,13 @@ In the R code chunk below, do the following:
 2. use a permutation test (999 permutations) to test the correlations of each species along each axis.
 
 ```{r}
+spe.corr <- add.spec.scores(fish.pcoa, fishREL, method = "cor.scores")$cproj
+corrcut <- 0.7 # user defined cutoff
+imp.spp <- spe.corr[abs(spe.corr[, 1]) >= corrcut | abs(spe.corr[, 2]) >= corrcut, ]#now get those spp above the cutoff
+print(imp.spp)#and print the latter list
 
-
-
-
+#do a permut'n test for species abundance across axes
+fit <- envfit(fish.pcoa, fishREL, perm = 999)
 
 
 ```
@@ -238,8 +339,14 @@ a.  Describe the grouping of sites in the Doubs River based on fish community co
 b.  Generate a hypothesis about which fish species are potential indicators of river quality.
 
 > ***Answer 7a***:  
-> ***Answer 7b***:   
+> I think the clustering _is__ based on the community composition of the 30 sites, and therefore the question confuses me somewhat.
 
+> The sites cluster similarly in the PCoA as they did in the Ward's Clustering.
+
+> One could posit a similar hypothesis that the clustering is related to geographic upstream/downstream distance. If the site numbers correspond 1 through 30 to sites most Upstream through most Downstream (and based on section 5A, I think this is true), this hypothesis would be somewhat supported.
+
+> ***Answer 7b***:   
+> Perhaps it would make sense to focus on the most-influential species. The correlation coefficient test indicated that Phph, Neba, Rham, Legi, Cyca, Abbr, Acce, Blbj, Alal, and Anan spp exhibited a correlation coefficiant > 0.7 along at least PCoA dimension. Whether or not these species are particularly sensitive to changes in water quality, I think that even if these spp. are equally sensitive to water quality as other fish spp., if there is a response by the stream organisms, it would be more easily detectable in these species.
 
 ## 5) HYPOTHESIS TESTING
 
@@ -252,13 +359,18 @@ In the code chunk below, test the hypothesis that fish community composition var
 2. use the multivariate analyses for categorical predictors to describe how fish community structure relates to habitat quality.
 
 ```{r}
+quality <- c(rep("HQ", 13), rep("MQ", 5), rep("LQ", 6), rep("MQ", 5)) #site 8 doesnt exist here
+adonis(fish ~ quality, method = "bray", permutations = 999)#now look for differences in fish community composition in respose to the quality factor vector I created
+#p <= 0.001 < 0.05
+indval <- multipatt(fish, cluster = quality, func = "IndVal.g", control = how(nperm=999))
+summary(indval)#are there spp which are especially representative of a particular level of the quality factor?
+#All spp overlap with medium quality
 
-
-
-
-
-
-
+#or calculate affinity of particular species for particular quality factor levels
+fish.rel <- decostand(fish, method = "total")
+phi <- multipatt(fish.rel, cluster = quality, func = "r.g", control = how(nperm=999))
+summary(phi)
+#all spp have significant affinities for one, or a combination of two, factor levels.
 
 
 ```
@@ -266,7 +378,11 @@ In the code chunk below, test the hypothesis that fish community composition var
 ***Question 8***: Based on the PERMANOVA, IndVal, and phi coefficient analyses, what did you learn about the relationship between habitat quality and the fish species composition?
 
 > ***Answer 8***: 
+> perMANOVA indicates that spp. are not distributed among sites of varying quality under the distribution predicted by a null model.
 
+> IndVal indicates thats there are not particular species which are very indicative of low or high quality waters. 23 species were significant indicators, but all of those indications included medium quality.
+
+> phi coefficient analysis indicates that 1/3 of the species have an affinity for one particular level of water quality, and 2/3 of the species have affinity for <= 2 levels of water quality.
 
 ### B.  Multivariate Procedures for Continuous Designs
 
@@ -277,9 +393,11 @@ In the R code chunk below, do the following:
 2. use a Mantel test to determine if these matrices are correlated, and test the hypothesis that fish assemblages are correlated with stream environmental variables.
 
 ```{r}
+#make matrices
+fish.dist <- vegdist(doubs$fish[-8, ], method = "bray")
+env.dist <- vegdist(scale(doubs$env[-8,]),method = "euclid")
 
-
-
+mantel(fish.dist,env.dist)
 
 
 ```
@@ -287,6 +405,7 @@ In the R code chunk below, do the following:
 ***Question 9***: What do the results from our Mantel test suggest about fish diversity and stream environmental conditions? How does this relate to your hypothesis about stream quality influencing fish communities?
 
 > ***Answer 9***:  
+> Fish diversity is correlated with environmental variables (r = 0.604). This supports the results of the categorical analyses above, which in turn supports an hypothesis in which some species do have particular affinities for differing levels of water quality.
 
 ### ii.  Constrained Ordination
 In the R code chunk below, do the following:  
@@ -300,30 +419,72 @@ In the R code chunk below, do the following:
 7. add vectors that demonstrate the influence of each environmental factor the constrained ordination.   
 
 ```{r}
+#make envtl matrix
+env.chem <- as.matrix(doubs$env[-8 , 5:11])
+#dbRDA, redundancy analysis
+doubs.dbrda <- dbrda(fish.db ~ ., as.data.frame(env.chem))
+ordiplot(doubs.dbrda)
+psych::corr.test(env.chem)
 
 
 
+#nit, amm, oxy, bdo are all significantly correlated with one another.
+#let's be more parsimonious and use fewer variables---avoid model overfitting
+# First, we will model only the intercept
+doubs.dbrda.mod0 <- dbrda(fish.db ~ 1, as.data.frame(env.chem))
 
+ordiplot(doubs.dbrda.mod0)
+#the full model:
+doubs.dbrda.mod1 <- dbrda(fish.db ~ ., as.data.frame(env.chem))
+# Now step through all combinations of explanatory variables
+doubs.dbrda <- ordiR2step(doubs.dbrda.mod0, doubs.dbrda.mod1, perm.max = 200)
 
+#Then lowest AIC model is returned; add trace argument bc I want to see more models, but I'm not sure it did anything
+doubs.dbrda <- ordiR2step(doubs.dbrda.mod0, doubs.dbrda.mod1, perm.max = 200, trace = TRUE)
+# examine model that was selected
+doubs.dbrda$call
+doubs.dbrda$anova
+ordiplot(doubs.dbrda)
+# Permutation tests to evaluate significance
+permutest(doubs.dbrda, permutations = 999)
+#P <= 0.001
+envfit(doubs.dbrda, env.chem[,c(4,6,7)], perm = 999)
+# Calc xplained variation
+dbrda.explainvar1 <- round(doubs.dbrda$CCA$eig[1] /sum(c(doubs.dbrda$CCA$eig, doubs.dbrda$CA$eig)), 3) * 100
+dbrda.explainvar2 <- round(doubs.dbrda$CCA$eig[2] /sum(c(doubs.dbrda$CCA$eig, doubs.dbrda$CA$eig)), 3) * 100
+print(dbrda.explainvar1+dbrda.explainvar2)
+#first two axes explain 51.6% of variance
 
+# Define Plot Parameters
+par(mar = c(5, 5, 4, 4) + 0.1)
+# Initiate Plot
+plot(scores(doubs.dbrda, display = "wa"), xlim = c(-1.3, 1.1), ylim = c(-1.1, 2.7),
+xlab = paste("dbRDA 1 (", dbrda.explainvar1, "%)", sep = ""), ylab = paste("dbRDA 2 (", dbrda.explainvar2, "%)", sep = ""), pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+# Add Axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+# points & labels
+points(scores(doubs.dbrda, display = "wa"), pch = 19, cex = 2.5, bg = "gray", col = "#fc3e3f")
+text(scores(doubs.dbrda, display = "wa"), labels = row.names(scores(doubs.dbrda, display = "wa")))
+# envtl Vectors
+vectors <- scores(doubs.dbrda, display = "bp")
+#row.names(vectors) <- rownames(vectors)
 
-
-
-
-
-
-
-
-
-
-
-
+arrows(0, 0, vectors[,1], vectors[, 2],
+lwd = 2, lty = 1, length = 0.2, col = "#883c9a")
+text(vectors[,1], vectors[, 2], pos = 3, labels = row.names(vectors))
+axis(side = 3, lwd.ticks=2, cex.axis=1.2, las = 1, col = "#883c9a", lwd = 2.2, at = pretty(range(vectors[, 1])) * 2, labels = pretty(range(vectors[, 1])))
+axis(side = 4, lwd.ticks=2, cex.axis=1.2, las = 1, col = "#883c9a", lwd = 2.2, at = pretty(range(vectors[, 2])) * 2, labels = pretty(range(vectors[, 2])))
+#okay, it worked...
 
 ```
 
 ***Question 10***: Based on the constrained ordination, what are the environmental variables (or groups of correlated variables) that seem to be contributing to variation in fish community structure?
 
 > ***Answer 10***: 
+> The constrained ordination was able to explain 51.6% of the variance using just the nit, oxy, and bdo variables. All these variables were highly significant (P<0.005) in the lowest AIC constrained ordination model.
 
 ### iii. Variation Partitioning
 In the code chunk below,   
@@ -335,11 +496,44 @@ In the code chunk below,
 5. Partition the variation among sites into the relative importance of space, environment, spatially structured environment, and residuals,
 6. Plot the variation partitioning output to visualize it.  
 ```{r}
+doubs.dbrda$anova
+env.mod <- model.matrix(~ oxy + bdo + nit, as.data.frame(env.chem))[,-1]#matrix model for the significant envtl data
 
+#spatial model:
+rs <- rowSums(fish)/sum(fish)
+doubs.pcnmw <- pcnm(dist(doubs$xy[-8,]), w = rs, dist.ret = T)
+doubs.pcnmw$values > 0
+#pare down the model
+doubs.space <- as.data.frame(scores(doubs.pcnmw))
+doubs.pcnm.mod0 <- dbrda(fish.db ~ 1, doubs.space)
+doubs.pcnm.mod1 <- dbrda(fish.db ~ ., doubs.space)
+step.pcnm <- ordiR2step(doubs.pcnm.mod0, doubs.pcnm.mod1, perm.max = 200)
+#biplot
+plot(step.pcnm)#it's convoluted
+step.pcnm$anova
+#spatial model with only the PCNMs indicated in the lowest AIC model
+space.mod <- model.matrix(~ PCNM2 + PCNM3 + PCNM5 + PCNM1 + PCNM13 + PCNM16 + PCNM6, doubs.space)[,-1]
 
-
-
-
+#constrained ordinations
+doubs.total.env <- dbrda(fish.db ~ env.mod)
+doubs.total.space <- dbrda(fish.db ~ space.mod)
+#partial constrained ordination stt one varb is controlled for
+doubs.env.cond.space <- dbrda(fish.db ~ env.mod + Condition(space.mod))
+doubs.space.cond.env <- dbrda(fish.db ~ space.mod + Condition(env.mod))
+#simulations for p-value testing
+permutest(doubs.env.cond.space, permutations = 999)
+permutest(doubs.space.cond.env, permutations = 999)
+permutest(doubs.total.env, permutations = 999)
+permutest(doubs.total.space, permutations = 999)
+#all are significant, P <= 0.001
+#visualize proportions of variancle explained by each type of variables
+doubs.varpart <- varpart(fish.db, env.mod, space.mod)
+doubs.varpart
+par(mar = c(2,2,2,2))
+plot(doubs.varpart)
+text(1, 0.25, "Space")
+text(0, 0.25, "Env")
+mtext("Variation Partitioning of\nDoubs Fish Diversity", side = 3, line = -3)
 
 
 ```
@@ -347,6 +541,146 @@ In the code chunk below,
 ***Question 11***: Interpret the variation partitioning results.   
 
 > ***Answer 11***: 
+> The majority (73-74%) of the variance can be explained by environment and/or space. The largest portion (37%) is explained by spatially structured environment factors. Space alone explained more variation (24%) than environment alone did (13%).
+
+> This indicates that the environmental variables are correlated with geographic location. When this is taken into account, the model can make better predictions about community compositions.
 
 ## SYNTHESIS
 Load the dataset you are using for your project. Perform an ordination to visualize your dataset.  Using this ordination, develop some hypotheses relevant to $\beta$-diversity and identify the appropriate tools you would use to test them.
+```{r}
+plant<-read.csv("C:\\Users\\rmoge\\GitHub\\QB2017_DivPro\\Data\\HF_plants.csv")
+#print(dim(plant))
+#print(names(plant))
+
+#install.packages("dplyr")
+require(dplyr)
+plants.sortedT<-arrange(plant, treatment)
+plants.sortedY<-arrange(plants.sortedT,year)
+plants.sortedP<-arrange(plants.sortedY,plot)
+my2009plants.sortedY<-filter(plants.sortedY, year==2009)
+dim(my2009plants.sortedY)
+sbs2009plants.sortedYt<-my2009plants.sortedY[4:43]
+sbs2009plants.sortedYtt<-sbs2009plants.sortedYt[-16,]
+
+soilenv<-read.csv("C:\\Users\\rmoge\\GitHub\\QB2017_DivPro\\Data\\HF_soilresp.csv")
+my2009soilenv<-filter(soilenv,year==2009,day==14,month==1)
+temporary_soil<-my2009soilenv[-9]
+sbs2009soilenv<-as.matrix(temporary_soil[8:11])
+
+# Calculate Bray-Curtis
+#plant.db <- vegdist(sbs2009plants.sortedYt, method = "bray")
+#plant.db
+plant.db <- vegdist(as.matrix(sbs2009plants.sortedYtt), method = "bray", upper = TRUE, diag = TRUE)
+plant.ward <- hclust(plant.db, method = "ward.D2")#now visualize phylogenetically
+par(mar = c(1, 5, 2, 2) + 0.1)#set up display settings
+plot(plant.ward, main = "HF sites 2009: Ward's Clustering",ylab = "Squared Bray-Curtis Distance")#plot the tree
+#I will try to make sense of the clustering based on known treatments that were applied.
+#Unfortunately 19;9;13 are all different treatments.
+#4;2;23 are none controls, but each is a different experimental treatment.
+#6;5;14;18;21 run the gamut of treatments.
+#10;11;3;22 are all non-controls, but 24 is a control plot
+#12;17 are not the same treatment.
+#20;7;8 are not the same treatment.
+#1;15 are not the same treatment.
+#I am not able to detect any categorical patterns in the clustering.
+
+
+#Next do PCoA
+plant.pcoa <- cmdscale(plant.db, eig = TRUE, k = 3)#do the PCoA
+str(plant.pcoa)
+explainvar1 <- round(plant.pcoa$eig[1] / sum(plant.pcoa$eig), 3) * 100#for each of the first three eigenvalues, assess what proportion of variance it explains
+explainvar2 <- round(plant.pcoa$eig[2] / sum(plant.pcoa$eig), 3) * 100
+explainvar3 <- round(plant.pcoa$eig[3] / sum(plant.pcoa$eig), 3) * 100
+sum.eig <- sum(explainvar1, explainvar2, explainvar3)#total amt explained in these 3 dimensions
+
+par(mar = c(5, 5, 1, 2) + 0.1)#structure the figure output
+# Initiate Plot
+plot(plant.pcoa$points[ ,1], plant.pcoa$points[ ,2], ylim = c(-0.2, 0.7), xlab = paste("PCoA 1 (", explainvar1, "%)", sep = ""), ylab = paste("PCoA 2 (", explainvar2, "%)", sep = ""), pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+# Add Axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+# Add Points & Labels
+points(plant.pcoa$points[ ,1], plant.pcoa$points[ ,2],
+pch = 19, cex = 3, bg = "#fc066e", col = "#fc066e")
+text(plant.pcoa$points[ ,1], plant.pcoa$points[ ,2],
+labels = row.names(plant.pcoa$points))
+#Now IDfy the most influential spp
+plantREL <- sbs2009plants.sortedYtt
+  for(i in 1:nrow(sbs2009plants.sortedYtt)){
+    plantREL[i, ] = sbs2009plants.sortedYtt[i, ] / sum(sbs2009plants.sortedYtt[i, ])
+    }
+plant.pcoa <- add.spec.scores(plant.pcoa,plantREL,method = "pcoa.scores")
+text(plant.pcoa$cproj[ ,1], plant.pcoa$cproj[ ,2],labels = row.names(plant.pcoa$cproj), col = "#247347")
+#i used exactly the same commands as for ordination for fish communities. However, this time I sometimes get 
+#24 errors indicating 'stdev is zero' and the site identification numbers are not plotted on the ordination figure.
+#I don't know what is going wrong.
+#When the figure does plot correctly, I see the same patterns as in the "phylogenetic clustering": the clusters
+#in the ordination are not coherent with respect to the climate treatment that was applied to the plots.
+
+#________________________________________________________________________________________________________________
+#Tribor; vacc; denpun; viblen species appear to be the most influential spp. I will examine these taxa more closely.
+#________________________________________________________________________________________________________________
+
+
+#Constrained ordination to examine soil abiotic properties as drivers of tree species diversity
+#That is, these are soil environmental variables which were measured observationally, unlike the climate
+#modification treatments I have referred to heretofore.
+
+#dbRDA, redundancy analysis
+HF.dbrda <- dbrda(plant.db ~ ., as.data.frame(sbs2009soilenv))
+ordiplot(HF.dbrda)
+psych::corr.test(sbs2009soilenv)
+
+#none of the variables are all significantly correlated with one another.
+# First, we will model only the intercept
+HF.dbrda.mod0 <- dbrda(plant.db ~ 1, as.data.frame(sbs2009soilenv))
+
+ordiplot(HF.dbrda.mod0)
+#the full model:
+HF.dbrda.mod1 <- dbrda(plant.db ~ ., as.data.frame(sbs2009soilenv))
+ordiplot(HF.dbrda.mod1)
+
+# Permutation tests to evaluate significance
+permutest(HF.dbrda.mod1, permutations = 999)
+#P = 0.116
+envfit(HF.dbrda.mod1, sbs2009soilenv, perm = 999)
+#only co2 flux is a significant explanatory variable
+
+# Calc xplained variation
+dbrda.explainvar1 <- round(HF.dbrda.mod1$CCA$eig[1] /sum(c(HF.dbrda.mod1$CCA$eig, HF.dbrda.mod1$CA$eig)), 3) * 100
+dbrda.explainvar2 <- round(HF.dbrda.mod1$CCA$eig[2] /sum(c(HF.dbrda.mod1$CCA$eig, HF.dbrda.mod1$CA$eig)), 3) * 100
+print(dbrda.explainvar1+dbrda.explainvar2)
+#first two axes explain 20.8% of variance
+
+# Define Plot Parameters
+par(mar = c(5, 5, 4, 4) + 0.1)
+# Initiate Plot
+plot(scores(HF.dbrda.mod1, display = "wa"), xlim = c(-1.3, 1.1), ylim = c(-1.1, 2.7),
+xlab = paste("dbRDA 1 (", dbrda.explainvar1, "%)", sep = ""), ylab = paste("dbRDA 2 (", dbrda.explainvar2, "%)", sep = ""), pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+# Add Axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+# points & labels
+points(scores(HF.dbrda.mod1, display = "wa"), pch = 19, cex = 2.5, bg = "#f3e634", col = "#9de209")
+text(scores(HF.dbrda.mod1, display = "wa"), labels = row.names(scores(HF.dbrda.mod1, display = "wa")))
+# envtl Vectors
+vectors <- scores(HF.dbrda.mod1, display = "bp")
+#row.names(vectors) <- rownames(vectors)
+
+arrows(0, 0, vectors[,1], vectors[, 2],
+lwd = 2, lty = 1, length = 0.2, col = "#c21c7e")
+text(vectors[,1], vectors[, 2], pos = 3, labels = row.names(vectors))
+axis(side = 3, lwd.ticks=2, cex.axis=1.2, las = 1, col = "#c21c7e", lwd = 2.2, at = pretty(range(vectors[, 1])) * 2, labels = pretty(range(vectors[, 1])))
+axis(side = 4, lwd.ticks=2, cex.axis=1.2, las = 1, col = "#c21c7e", lwd = 2.2, at = pretty(range(vectors[, 2])) * 2, labels = pretty(range(vectors[, 2])))
+
+#this plot makes it even more clear that co2 is the best predictor of tree community composition
+#In the plot it also appears that t5cm and t10cm (temperature at 5cm and 10cm soil depths) are very similar. The model could be perhaps made more parsimonious by collapsing these two variables into one. However, since they were not significantly correlated in a correlation test, I believe that it is ok to leave the model the way it is.
+
+#I tried to match up site identifiers with treatment (control, N addition, warming, or both warming + N), but the clusters don't match well. In 20,15,8,7 none are control plots, but all three treatment types are represented. 13 and 17 are warmed plots, but 12 is a control. It's difficult to make sense of.
+#Perhaps this is not surprising---the permutations test was not significant.
+```
+
