@@ -49,6 +49,8 @@ In the R code chunk below, do the following:
 1. Install and/or load the following packages: `vegan`, `sp`, `gstat`, `raster`, `RgoogleMaps`, `maptools`, `rgdal`, `simba`, `gplots`, `rgeos`
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE} 
+#vegan
+
 #install.packages("vegan")
 require(vegan)
 #install.packages('sp') # Classes and methods for handling spatial data
@@ -149,9 +151,6 @@ In the R code chunk below, do the following:
 Tree.Cover <- raster("TreeCover/TreeCover.tif")
 
 
-
-
-
 # 2. Plot the % tree cover data
 plot(Tree.Cover, xlab = 'Longitude', ylab = 'Latitude',
 main = 'Map of geospatial data for % tree cover,\nwater bodies, and sample sites')
@@ -167,7 +166,7 @@ plot(Refuge.Ponds, line='r', col='red', pch = 20, cex = 1.5, add = TRUE)
 
 ***Question 4a***: What are datums and projections?
 
-> ***Answer 4a***:  A datum defines the shape of Earth's surface. Then a projection maps that 3D shape onto a 2D map.
+> ***Answer 4a***:  A datum defines the shape of Earth's surface. Then a projection maps that 3D shape onto a 2D surface.
 
 
 ## 5) UNDERSTANDING SPATIAL AUTOCORRELATION
@@ -257,7 +256,7 @@ diffslope(env, struc, dist, struc)
 
 ***Question 8***: In your own words, explain the species spatial abundance distribution and what it reveals.
 
-> ***Answer 8***:
+> ***Answer 8***: A spatial abundance distribution is like proportional-frequency-corrected histogram of abundances with continuous probability (instead of discrete bins). The SSAD looks at each species, and for each creates one of these continuous historgrams, displaying how many (in relative frequency) sites are expected to be found for each possible abundance value.
 
 
 In the R code chunk below, do the following: 
@@ -267,13 +266,27 @@ In the R code chunk below, do the following:
 
 ```{r}
 # 1. Define an SSAD function
-
+ssad <- function(x){
+  ad <- c(2, 3)
+  ad <- OTUs[, otu]
+  ad = as.vector(t(x = ad))
+  ad = ad[ad > 0]
+}
 # 2. Set plot parameters
+par(mfrow=c(2, 3))
 
 # 3. Declare a counter variable
-
+ct <- 0
 # 4. Write a while loop to plot the SSADs of six species chosen at random 
-
+while (ct < 6){ 
+  otu <- sample(1:length(OTUs), 1) # random column
+  ad <- ssad(otu) # find the OTU's SSAD
+  if (length(ad) > 10 & sum(ad > 100)){ #if present in >10 sites with abundance >100, use this OTU
+    ct <- ct + 1#and increment the counter
+    plot(density(ad), col = 'red', xlab='Site abundance',
+    ylab='Probability Density', main = otu.names[otu])
+    }
+  }
 ```
 
 
@@ -283,13 +296,19 @@ Many patterns of biodiversity relate to spatial scale.
 ***Question 9***:  List, describe, and give examples of the two main aspects of spatial scale
 
 > ***Answer 9***: 
+> 1) Extent. This is the total geographic scale across all sites; extent will be defined by the sites at the most geographically-extreme locations. If there is one site in Hammerfest, one site in Nicosea, one in Lisbon, and one in Volgograd we can say that the extent of the dataset is all of Europe, and we could state it numerically (in meters^2) and geographically (in lat-lon coordinates).
 
+> 2) Grain. This indicates how coarsely or finely resolved the dataset is. That is, the size of the individual sites in the sutdy determines the grain. For example, if the data in the above study were pooled such that Norway, Portugal, Cyprus, and Russia each constituted one study site, that would be a coarse grain; contrariwise, if there were many study sites  within each country (e.g. each oblast in Russia or kommune in Norway), that would be a finer grain.
 
 ## 9) CONSTRUCTING THE SPECIES-AREA RELATIONSHIP
 
 ***Question 10***: In your own words, describe the species-area relationship.
 
-> ***Answer 10***: 
+> ***Answer 10***:
+
+> As the spatial extent of a study increases, so does the species richness. However, the rate at which richness increases for a given rate of increase of spatial extent is not constant across all spatial sizes. This can be represented as a power law S = cA^z--- it is z which is not constant for all spatial extents.
+
+> At first, at the local scale, richness increases rapidly (larger z) because new sub-ecosystems are being sampled---for example, imagine the plot begins in a forest. First increases simply capture new species because sampling effort was originally minimal, but subsequently as spatial extent increases the plot begins to encompass lakes, streams, open grassy areas. At the regional scale, these nearby sub-ecosystems have already been sampled and are added more slowly, so the richness increases more slowly, too (smaller z). However, as the spatial extent begins to encompass new biogeographic biomes (tundra; tropics; cacti AND phorbs), the rate of increase of richness speeds up again (larger z).
 
 
 In the R code chunk below, provide the code to: 
@@ -298,9 +317,22 @@ In the R code chunk below, provide the code to:
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
 # 1. Declare variables to hold simulated community and species information 
-
+community <- c() #empty community
+species <- c() # empty species vector
 # 2. Populate the simulated landscape
 
+# initiate the plot
+plot(0, 0, col='white', xlim = c(0, 100), ylim = c(0, 100), xlab='x coordinate', ylab='y coordinate', main='A simulated landscape occupied by 100 species, having 1 to 1000 individuals each.')
+while (length(community) < 100){# choose the mean, standard deviation, and species color at random
+  std <- runif(1, 1, 10) # random sample from a uniform distribution
+  ab <- sample(1000, 1) # random number
+  x <- rnorm(ab, mean = runif(1, 0, 100), sd = std) # 1000 random numbers from a Normal distribution for x values, centered at a random value (ab) (I think)
+  y <- rnorm(ab, mean = runif(1, 0, 100), sd = std) # 1000 random numbers from a Normal distribution for y values, centered at a random value (ab)
+  color <- c(rgb(runif(1),runif(1),runif(1))) # Let each species have a randomly chosen color
+  points(x, y, pch=".", col=color) # Add points to a plot
+  species <- list(x, y, color) # The species color, x-coords, and y-coords
+  community[[length(community)+1]] <- species # Add the species' info to the community
+}
 
 ```
 
@@ -311,10 +343,32 @@ While consult the handout for assistance, in the R chunk below, provide the code
 
 ```{r}
 # 1. Declare the spatial extent and lists to hold species richness and area data
-
+lim <- 10 # grain
+S.list <- c() #spp vector
+A.list <- c() #spatial scale vector
 # 2. Construct a 'while' loop and 'for' loop combination to quantify the numbers of species for progressively larger areas of the simulated landscape.
-
+while (lim <= 100){ # while the spatial extent <= 100...
+  S <- 0 # initiate richness
+  for (sp in community){ # for each species in the community
+    xs <- sp[[1]] # assign the x coords
+    ys <- sp[[2]] # assign the y coords
+    sp.name <- sp[[3]] # assign the species name
+    xy.coords <- cbind(xs, ys) # combine the columns for x and y coordinates
+    for (xy in xy.coords){ # for each pair of xy coordinates
+      if (max(xy) <= lim){ # if the individual is within our current spatial extent...
+      S <- S + 1 # then the species occurs there
+        break # break out of the last for loop because we now know the species occurs inside this sampling
+        }
+      }
+    }
+  S.list <- c(S.list, log10(S))
+  A.list <- c(A.list, log10(lim^2))
+  lim <- lim * 2 # increase the extent multiplicatively
+  }
 # 3. Be sure to log10-transform the richness and area data
+#I did this within the while loop
+
+
 ```
 
 
@@ -325,17 +379,28 @@ In the R code chunk below, provide the code to:
 3. Add a legend for the z-value (i.e., slope of the SAR)
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
+results <- lm(S.list ~ A.list)
+plot(A.list, S.list, col="#e003f4", pch=20, cex=2, main="Species-area relationship", xlab='ln(Area)', ylab='ln(Richness)')
+abline(results, col="#2da55d", lwd=2)
+int <- round(results[[1]][[1]],2)
+z <- round(results[[1]][[2]],5)
+legend(x=2, y=2, paste(c('slope = ', z), collapse = " "), cex=0.8,
+box.lty=0)
 
 ```
 
 
 ***Question 10a***: Describe how richness relates to area in our simulated data by interpreting the slope of the SAR.
 
-> ***Answer 10a***: 
+> ***Answer 10a***:
+
+> The slope is 0.20366. The intercept is close to e^1.2 ~= 3.32. So the equation of the SAR is something like S = 3.32(A)^0.20366. Richness increases with increasing area. If we have 10 areal units, we expect ~5.3064 species to be present. In an area of 100 areal units, we expect a richness of ~8.4812. In an area of 1000 areal units, we expect a richness of ~13.5556 species.
 
 ***Question 10b***: What does the y-intercept of the SAR represent?
 
-> ***Answer 10b***: 
+> ***Answer 10b***:
+
+> We used a plot in which ln(S) = ln(c) + z*ln(A). The intercept occurs where ln(A) = 0, or A = 1. So the intercept indicates the expected richness when the spatial area is unity. I think this means that this is the expected richness within the smallest grain, but I am not sure.
 
 
 ## SYNTHESIS
