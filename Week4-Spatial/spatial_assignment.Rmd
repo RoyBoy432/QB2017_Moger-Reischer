@@ -1,6 +1,6 @@
 ---
 title: "Assignment: Spatial Diversity"
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Roy Z Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -37,8 +37,9 @@ In the R code chunk below, provide the code to:
 3. Set your working directory to your "*/Week4-Spatial*" folder, and
 
 ```{r, results = 'hide'}
-
-
+rm(list=ls())
+getwd()
+#setwd
 ```
 
 ## 2) LOADING R PACKAGES
@@ -48,14 +49,42 @@ In the R code chunk below, do the following:
 1. Install and/or load the following packages: `vegan`, `sp`, `gstat`, `raster`, `RgoogleMaps`, `maptools`, `rgdal`, `simba`, `gplots`, `rgeos`
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE} 
+#install.packages("vegan")
+require(vegan)
+#install.packages('sp') # Classes and methods for handling spatial data
+require(sp)
+#install.packages('gstat') # geostatistical analyses
+require(gstat)
+#install.packages('raster') # create a RasterLayer object
+require(raster)
+#install.packages('RgoogleMaps') #find Google server for static maps.
+require(RgoogleMaps)
+#install.packages('maptools') # Tools for geospatial data
+require(maptools)
+#install.packages('rgdal') # Geospatial Data Abstraction Library
+require(rgdal)
+#install.packages('simba')
+require("simba")
+#install.packages('gplots')
+require("gplots")
 
 
-
+? simba
+? rgdal
+? sp
+#install.packages("ggplot2")
+require(ggplot2)
 ```
 
 ***Question 1***:  What are the packages `simba`, `sp`, and `rgdal` used for?
 
 > ***Answer 1***:  
+
+> simba: "Calculate similarity measures for binary data." That is, if we have species data in binary format, we can calculate (dis)similarity metrics.
+
+> sp: This package helps turn R into a GIS software. It defines classes that represent point data, line data, shape data, coordinates data. It looks like this could help R interpret GIS shapefiles and the like.
+
+> rgdal: there was no automatic documentation for this package. It looks like this a package that interfaces with sp to be able to read shapefiles and interpret a coordinate reference system and projections.
 
 
 ## 3) LOADING DATA
@@ -67,17 +96,26 @@ In the R code chunk below, use the example in the handout to do the following:
 4. Remove the first column (i.e., site names) from the OTU matrix.
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE} 
-
-
+Ponds <- read.table(file = "BrownCoData/20130801_PondDataMod.csv", head = TRUE, sep = ",")
+lats <- as.numeric(Ponds[, 3]) # latitudes (north and south)
+lons <- as.numeric(Ponds[, 4]) # longitudes (east and west)
+OTUs <- read.csv(file = "BrownCoData/SiteBySpecies.csv", head = TRUE, sep = ",")
+otu.names = names(OTUs)
+OTUs<-as.data.frame(OTUs[-1])
+str(OTUs)
+S.obs <- function(x=""   ){
+   rowSums(x>0) *1 
+}#for each row x, take the sum of columns for whcih x > 0
+max(S.obs(OTUs))
 ```
 
 ***Question 2a***:  How many sites and OTUs are in the SiteBySpecies matrix? 
 
-> ***Answer 2a***:  
+> ***Answer 2a***:  There are 51 sites. There are 16384-1=16383 distinct OTUs.
 
 ***Question 2b***:  What is the greatest species richness found among sites?
 
-> ***Answer 2b***:  
+> ***Answer 2b***:  3659
 
 
 ## 4) GENERATE MAPS
@@ -88,12 +126,18 @@ In the R code chunk below, do the following:
 This map will be centered on Brown County, Indiana (39.1 latitude, -86.3 longitude).
 
 ```{r}
+newmap <- GetMap(center = c(39.1,-86.3), zoom = 10,destfile = "PondsMap.png", maptype="terrain")
+PlotOnStaticMap(newmap, zoom = 10, cex = 2, col = 'blue') # Plot map in RStudio
+PlotOnStaticMap(newmap, lats, lons, cex = 1, pch = 20, col = 'red', add = TRUE)
+
+
 
 ```
 
 ***Question 3***:  Briefly describe the geographical layout of our sites.
 
-> ***Answer 3***:  
+> ***Answer 3***: 
+> There are 3 main spatial clusters of sites (north central, south central, northeast). There are also small clusters of sites to the southeast and southwest, with one single site located in the northwest. Some are nearer to water than others.
 
 
 In the R code chunk below, do the following:  
@@ -102,29 +146,38 @@ In the R code chunk below, do the following:
 
 ```{r}
 # 1. Import TreeCover.tif as a raster file.
+Tree.Cover <- raster("TreeCover/TreeCover.tif")
+
+
+
+
 
 # 2. Plot the % tree cover data
-
+plot(Tree.Cover, xlab = 'Longitude', ylab = 'Latitude',
+main = 'Map of geospatial data for % tree cover,\nwater bodies, and sample sites')
 # 3. Import water bodies as a shapefile.
-
+Water.Bodies <- readShapeSpatial("water/water.shp")
 # 4. Plot the water bodies around our study area, i.e., Monroe County.
-
+plot(Water.Bodies, border='cyan', axes = TRUE, add = TRUE)
 # 5. Convert lat-long data for ponds to georeferenced points.
-
+Refuge.Ponds <- SpatialPoints(cbind(lons, lats))
 # 6. Plot the refuge pond locations
-
+plot(Refuge.Ponds, line='r', col='red', pch = 20, cex = 1.5, add = TRUE)
 ```
 
 ***Question 4a***: What are datums and projections?
 
-> ***Answer 4a***:  
+> ***Answer 4a***:  A datum defines the shape of Earth's surface. Then a projection maps that 3D shape onto a 2D map.
 
 
 ## 5) UNDERSTANDING SPATIAL AUTOCORRELATION
 
 ***Question 5***: In your own words, explain the concept of spatial autocorrelation.
 
-> ***Answer 5***:
+> ***Answer 5***: 
+> At its simplest, spatial autocorrelation means that the values for some phenotype for each of two points in space are not independent of the distance between the two points.
+
+
 
 
 ## 6) EXAMINING DISTANCE-DECAY
@@ -132,6 +185,7 @@ In the R code chunk below, do the following:
 ***Question 6***: In your own words, explain what a distance decay pattern is and what it reveals.
 
 > ***Answer 6***:
+> Two points that are near one another in space are more likely to share similar characteristics than are two points which are no near one another. if you compare, pairwise, the entire population of points, you should observe this pattern for all pairs of close points having a higher similarity score than the pairs distal points. The rate (slope) of change of extent of autocorrelation could be displayed as curve; this curve represents the "decay." 
 
 In the R code chunk below, do the following:  
 
@@ -140,31 +194,63 @@ Note: You will need to use some of the data transformations within the *semivari
 
 ```{r, results = 'hide', message = FALSE, warning = FALSE}
 # 1) Calculate Bray-Curtis similarity between plots using the `vegdist()` function
-
+comm.dist <- 1 - vegdist(OTUs)#this is Bray-Curtis similarity
 # 2) Assign UTM lattitude and longitude data to 'lats' and 'lons' variables
+xy <- data.frame(pond.name = Ponds$Sample_ID, lats = Ponds$lat, lons = Ponds$long)
+coordinates(xy) <- ~lats+lons#lat-lon dataframe
+# Identify the current projection
+proj4string(xy) <- CRS("+proj=longlat +datum=NAD83")
+# Transform the projection and data to UTM
+UTM <- spTransform(xy, CRS("+proj=utm +zone=51 +ellps=WGS84"))
+UTM <- as.data.frame(UTM)
+Ponds$lats_utmm <- UTM[,2] # latitude data
+Ponds$lons_utmm <- UTM[,3] # longitude data
+coordinates(Ponds) = ~lats_utmm+lons_utmm
+vgm <- variogram(TDS~1, data=Ponds)
+vgm.fit = fit.variogram(vgm, model = vgm(1, "Sph", 900, 1,fit.sill=F, fit.range=F))
+plot(vgm, vgm.fit)
+
+
+lats <- as.numeric(Ponds$lats_utmm) # lattitude data
+lons <- as.numeric(Ponds$lons_utmm) # longitude data
+
 
 # 3) Calculate geographic distance between plots and assign to the variable 'coord.dist'
-
+coord.dist <- dist(as.matrix(lats, lons))#for each lat & its corresponding lon, calculate the orthodromic distance between them
 # 4) Transform environmental data to numeric type, and assign to variable 'x1'
-
+x1 <- as.numeric(Ponds$"SpC")
 # 5) Using the `vegdist()` function in `simba`, calculate the Euclidean distance between the plots for environmental variables. Assign the result to the variable 'env.dist'
-
+env.dist <- vegdist(x1, "euclidean")
 # 6) Transform all distance matrices into database format using the `liste()` function in `simba`:
-
+comm.dist.ls <- liste(comm.dist, entry="comm")#must learn more abt "entry"
+env.dist.ls <- liste(env.dist, entry="env")
+coord.dist.ls <- liste(coord.dist, entry="dist")
 # 7) Create a data frame containing similarity of the environment and similarity of community.
+df <- data.frame(coord.dist.ls, env.dist.ls[,3], comm.dist.ls[,3])
 
 # 8) Attach the columns labels 'env' and 'struc' to the dataframe you just made.
-
+names(df)[4:5] <- c("env", "struc")
+attach(df)
 # 9) After setting the plot parameters, plot the distance-decay relationships, with regression lines in red.
-
-# 10) Use `simba` to calculates the difference in slope or intercept of two regression lines
-
+par(mfrow=c(1, 2), pty="s")
+plot(env, struc, xlab="Environmental Distance", ylab="1 - Bray-Curtis",
+main = "Environment", col='SteelBlue')
+OLS <- lm(struc ~ env)
+OLS # print regression results to the screen
+abline(OLS, col="red4")
+plot(dist, struc, xlab="Geographic Distance", ylab="1 - Bray-Curtis",
+main="Community\nComposition", col='darkorchid4')
+OLS <- lm(struc ~ dist)
+OLS # print regression results to the screen
+abline(OLS, col="red4")
+# 10) Use `simba` to calculate the difference in slope or intercept of two regression lines
+diffslope(env, struc, dist, struc)
 ```
 
 
 ***Question 7***: What can you conclude about community similarity with regars to environmental distance and geographic distance?
 
-> ***Answer 7***: 
+> ***Answer 7***: Community similarity decreases in more-different environments. It also decreases with geographic distance. Community similarity decreases more per unit of environmental distance than it does per unit of geographic distance.
 
 
 ## 7) EXAMINING SPECIES SPATIAL ABUNDANCE DISTRIBUTIONS
