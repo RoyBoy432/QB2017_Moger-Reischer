@@ -2,7 +2,7 @@
 title: "Assignment: Spatial Diversity"
 author: "Roy Z Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: pdf_document
+output: html_document
 geometry: margin=2.54cm
 ---
 
@@ -405,3 +405,48 @@ box.lty=0)
 
 ## SYNTHESIS
 Load the dataset you are using for your project. Plot and discuss either the geogrpahic Distance-Decay relationship, the SSADs for at least four species, or any variant of the SAR (e.g., random accumulation of plots or areas, accumulation of contiguous plots or areas, nested design).
+
+```{r}
+plant<-read.csv("C:\\Users\\rmoge\\GitHub\\QB2017_DivPro\\Data\\HF_plants.csv",header=TRUE,sep=",")
+#print(dim(plant))
+#print(names(plant))
+
+#install.packages("dplyr")
+require(dplyr)
+plants.sortedT<-arrange(plant, treatment)
+plants.sortedY<-arrange(plants.sortedT,year)
+plants.sortedP<-arrange(plants.sortedY,plot)
+my2009plants.sortedY<-filter(plants.sortedY, year==2009)
+dim(my2009plants.sortedY)
+sbs2009plants.sortedYt<-my2009plants.sortedY[4:43]
+sbs2009plants.sortedYtt<-as.data.frame(sbs2009plants.sortedYt[-16,])
+
+soilenv<-read.csv("C:\\Users\\rmoge\\GitHub\\QB2017_DivPro\\Data\\HF_soilresp.csv")
+my2009soilenv<-filter(soilenv,year==2009,day==14,month==1)
+temporary_soil<-my2009soilenv[-9]
+sbs2009soilenv<-as.matrix(temporary_soil[8:11])
+mycolnames<-colnames(sbs2009plants.sortedYtt, do.NULL = TRUE, prefix = "col")
+
+# 2. Set plot parameters
+par(mfrow=c(2, 2))
+
+# 3. Declare a counter variable
+ct <- 0
+# 4. Write a while loop to plot the SSADs of 4 species chosen at random 
+while (ct < 4){ 
+  tree.sp <- sample(1:length(sbs2009plants.sortedYtt), 1) # random column
+  ad <- ssad(tree.sp) # find the OTU's SSAD
+  #k <- arrayInd(tree.sp, dim(mdat))
+  if (length(ad) > 2 & sum(ad > 2)){ #if present in >10 sites with abundance >100, use this species
+    ct <- ct + 1#and increment the counter
+    plot(density(ad), col = 'red', xlab='Site abundance',
+    ylab='Probability Density', main = names(sbs2009plants.sortedYtt)[tree.sp])
+    }
+  }
+```
+
+> I selected the SSAD option because this dataset does not have geographic coordinate data.
+
+> I could have done a random-accumulation-by site SAR, but I don't think it would be very meaningful. All of the plots are, geographically, located in great proximity and the terrain is homogeneous.  I don't think doing a SAR would have much biological meaning, and if we saw a pattern it would be more likely to be a chance occurrence or a statistical pattern, rather than biological pattern.
+
+> It looks like all four of these species tend to be rare. The substantial majoring of the probability density for all four species is to be at a low (near zero) abundance at a randomly chosen site.
