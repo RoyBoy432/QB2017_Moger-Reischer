@@ -2,7 +2,7 @@
 title: "Assignment: Temporal Diversity"
 author: "RZ Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: html_document
+output: pdf_document
 geometry: margin=2.54cm
 ---
 
@@ -41,8 +41,17 @@ In the R code chunk below, provide the code to:
 4. load any packages you need to complete the assignment.
 
 ```{r}
-
-
+rm(list=ls())
+getwd()
+#setwd("~/GitHub/QB-2017/Week5-Temporal/")
+package.list <- c('vegan', 'tidyr', 'dplyr', 'codyn', 'ggplot2',
+'cowplot', 'MullerPlot', 'RColorBrewer', 'reshape2', 'lubridate',
+'TTR', 'xtable', 'multcomp', 'pander', 'png', 'grid', 'tseries', 'nlme', 'forecast', 'lsmeans')
+for (package in package.list) {
+if (!require(package, character.only = TRUE, quietly = TRUE)) {
+install.packages(package, repos='http://cran.us.r-project.org')
+library(package, character.only = TRUE) }
+}
 
 
 ```
@@ -55,10 +64,11 @@ In the R code chunk below, do the following:
 2. explore the structure of the dataset.
 
 ```{r}
-
-
-
-
+portal <- read.table("data/combined.csv", sep = ",", header = TRUE)
+str(portal)
+print(length(unique(portal$plot_id)))
+print(length(unique(portal$species_id)))
+print(length(unique(portal$species)))
 ```
 
 ***Question 1***:  Describe some of the attributes of the `portal` dataset.  
@@ -66,8 +76,8 @@ In the R code chunk below, do the following:
 a.  How many plots are in `portal`?
 b.  How many rodent species are there in the `portal` dataset?
 
-> ***Answer 1a***:  
-> ***Answer 1b***:  
+> ***Answer 1a***:24
+> ***Answer 1b***:  48
 
 ## 3) WRANGLING THE PORTAL DATASET
 
@@ -80,6 +90,20 @@ In the R code chunk below, do the following:
 5. Using the hypothesis testing tools you learned in the beta-diversity module, test the hypothesis that species abundances across sites vary as a factor of treatment type (i.e., plot_type). 
 
 ```{r}
+'''attach(portal)
+str(portal)
+mysbs94=filter(portal,year==1994)
+str(mysbs94)
+mysbs94=select(mysbs94,plot_id,species_id)'''
+
+
+
+portal <- unite(portal, col = date, c(year, month, day), sep = "-", remove = FALSE)
+portal <- unite(portal, col = taxon, c(genus, species), sep = "_", remove = FALSE)
+time.by.species <- group_by(portal, year, plot_id) %>% count(taxon) %>% spread(key = taxon, value = n, fill = 0)
+mysbs94=filter(time.by.species,year==1994)
+my_type<-portal%>%filter(year==1982)%>%group_by(plot_id,plot_type)%>%count(species_id)%>%spread(key = taxon, value = n, fill = 0)
+
 
 ```
 
