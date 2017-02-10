@@ -39,7 +39,7 @@ rm(list=ls())
 getwd()
 #setwd("~/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
 #setwd("/Users/rzmogerr/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
-setwd("C:\\Users\\rmoge\\GitHub\\QB2017_Moger-Reischer\\Week2-Alpha")
+#setwd("C:\\Users\\rmoge\\GitHub\\QB2017_Moger-Reischer\\Week2-Alpha")
 #install.packages("vegan")
 require(vegan)
 
@@ -76,7 +76,7 @@ In the R code chunk below, do the following:
 S.obs <- function(x=""   ){
    rowSums(x>0) *1 
 }#for each row x, take the sum of columns for whcih x > 0
-S.obs(BCI) #now creates a vector with 50 row sums---one sum for each row (site) in that data set.
+max(S.obs(BCI)) #now creates a vector with 50 row sums---one sum for each row (site) in that data set.
 specnumber(BCI)
 ```
 
