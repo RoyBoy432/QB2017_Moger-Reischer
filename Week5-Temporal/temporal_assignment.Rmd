@@ -41,7 +41,7 @@ In the R code chunk below, provide the code to:
 4. load any packages you need to complete the assignment.
 
 ```{r}
-rm(list=ls())
+#rm(list=ls())
 getwd()
 #setwd("~/GitHub/QB-2017/Week5-Temporal/")
 package.list <- c('vegan', 'tidyr', 'dplyr', 'codyn', 'ggplot2',
@@ -90,20 +90,97 @@ In the R code chunk below, do the following:
 5. Using the hypothesis testing tools you learned in the beta-diversity module, test the hypothesis that species abundances across sites vary as a factor of treatment type (i.e., plot_type). 
 
 ```{r}
-'''attach(portal)
-str(portal)
-mysbs94=filter(portal,year==1994)
-str(mysbs94)
-mysbs94=select(mysbs94,plot_id,species_id)'''
+
+#'''attach(portal)
+#str(portal)
+#mysbs94=filter(portal,year==1994)
+#str(mysbs94)
+#mysbs94=select(mysbs94,plot_id,species_id)'''
 
 
 
-portal <- unite(portal, col = date, c(year, month, day), sep = "-", remove = FALSE)
-portal <- unite(portal, col = taxon, c(genus, species), sep = "_", remove = FALSE)
-time.by.species <- group_by(portal, year, plot_id) %>% count(taxon) %>% spread(key = taxon, value = n, fill = 0)
-mysbs94=filter(time.by.species,year==1994)
-my_type<-portal%>%filter(year==1982)%>%group_by(plot_id,plot_type)%>%count(species_id)%>%spread(key = taxon, value = n, fill = 0)
+portal2 <- unite(portal, col = date, c(year, month, day), sep = "-", remove = FALSE)
+portal3 <- unite(portal2, col = species_id, c(genus, species), sep = "_", remove = FALSE)
+time.by.species <- group_by(portal, year, plot_id) %>% count(species_id) %>% spread(key = species_id, value = n, fill = 0)
 
+
+```
+```{r}
+mysbs82=filter(time.by.species,year==1982)
+mysbs82strip<-mysbs82[-c(1,2)]
+#dat %>% mutate_each_(funs(factor), l1) %>% mutate_each_(funs(as.numeric), l2)
+mysbs82strip<- apply(mysbs82strip,2, as.numeric)
+#2
+my_type<-portal%>%filter(year==1982)%>%group_by(plot_id,plot_type)%>%count(species_id)%>%spread(key = species_id, value = n, fill = 0)
+
+#3
+S.obs <- function(x=""   ){
+   rowSums(x>0) *1 
+}#for each row x, take the sum of columns for which x > 0
+
+
+SimpE <- function(x = ""){
+S <- S.obs(x)#obsvd richness
+x = as.data.frame(x)
+D <- diversity(x, "inv")
+E <- (D)/S
+return(E)
+}
+thuggy<-SimpE(mysbs82strip)
+#apply(mysbs82strip,1,SimpE)
+thugy<-apply(mysbs82strip,1,diversity)
+#4
+package.list <- c('vegan', 'ade4', 'viridis', 'gplots', 'BiodiversityR', 'indicspecies')
+for (package in package.list) {
+  if (!require(package, character.only=T, quietly=T)) {
+    install.packages(package)
+    library(package, character.only=T)
+  }
+}
+portal82.db <- vegdist(mysbs82strip, method = "bray", upper = TRUE, diag = TRUE)
+portal82.pcoa <- cmdscale(portal82.db, eig = TRUE, k = 3)#do the PCoA
+str(portal82.pcoa)
+explainvar1 <- round(portal82.pcoa$eig[1] / sum(portal82.pcoa$eig), 3) * 100#for each of the first three eigenvalues, assess what proportion of variance it explains
+explainvar2 <- round(portal82.pcoa$eig[2] / sum(portal82.pcoa$eig), 3) * 100
+explainvar3 <- round(portal82.pcoa$eig[3] / sum(portal82.pcoa$eig), 3) * 100
+sum.eig <- sum(explainvar1, explainvar2, explainvar3)#total amt explained in these 3 dimensions
+
+par(mar = c(5, 5, 1, 2) + 0.1)#structure the figure output
+# Initiate Plot
+plot(portal82.pcoa$points[ ,1], portal82.pcoa$points[ ,2], ylim = c(-0.2, 0.7), xlab = paste("PCoA 1 (", explainvar1, "%)", sep = ""), ylab = paste("PCoA 2 (", explainvar2, "%)", sep = ""), pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+# Add Axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+# Add Points & Labels
+points(portal82.pcoa$points[ ,1], portal82.pcoa$points[ ,2],
+pch = 19, cex = 3, bg = "#bc8d4f", col = "#bc8d4f")
+text(portal82.pcoa$points[ ,1], portal82.pcoa$points[ ,2],
+labels = row.names(portal82.pcoa$points))
+#Now IDfy the most influential spp
+portal82REL <- mysbs82strip
+  for(i in 1:nrow(mysbs82strip)){
+    portal82REL[i, ] = mysbs82strip[i, ] / sum(mysbs82strip[i, ])
+    }
+
+portal82.pcoa2 <- add.spec.scores(portal82.pcoa,portal82REL,method = "pcoa.scores")
+##################################
+#gives error: Error in is.data.frame(x) : 
+  #(list) object cannot be coerced to type 'double'
+##############################
+
+text(portal82.pcoa2$cproj[ ,1], portal82.pcoa2$cproj[ ,2],labels = row.names(portal82.pcoa2$cproj), col = "#802944")
+
+
+portal82.ward <- hclust(portal82.db, method = "ward.D2")#now visualize phylogenetically
+par(mar = c(1, 5, 2, 2) + 0.1)#set up display settings
+plot(portal82.ward, main = "Ward's Clustering",ylab = "Squared Bray-Curtis Distance")#plot the tree
+
+#5
+mytrtmnts<-c(my_type$plot_type)
+adonis(mysbs82strip ~ mytrtmnts, method = "bray", permutations = 999)
+#P=0.786.
 
 ```
 
@@ -112,8 +189,27 @@ my_type<-portal%>%filter(year==1982)%>%group_by(plot_id,plot_type)%>%count(speci
 a. Does diversity vary among sites? Does this correspond to treatment type?
 b. Is treatment type a significant predictor of site dissimilarity?
 
-> ***Answer 2a***: 
+> ***Answer 2a***:
+
+> Among the sites, Shannon's diversity ranges from 1.0364 to 2.1453.
+
+> Sites 16, 23, 7, 10 all cluster together, and all are Rodent Exclosure treatments.
+
+> Sites 19, 15, 3, 21 all cluster together, and all are LT K-ray Exclosures.
+
+> Sites 14, 4, 11, 12, 5 cluster together; and except 5 are controls.
+
+> Sites 6, 18, 1, 2, 13cluster together; 18, 6, and 13 are all Short-Term K-rat exclosures
+
+> Sites 17 and 20 cluster together, but they are not the same treatment.
+
+> Sites 22, 9, 8 cluster together, but only 22 and 8 are the same treatment.
+
+> Site 24, a Rodent Exclosure, is far distant from the other rodent exclosures.
+
 > ***Answer 2b***:
+
+> No, treatment is not a significant predictor of species composition (P = 0.786).
 
 ## 4) TIME SERIES ANALYSIS
 In the R code chunk below, do the following:  
