@@ -443,9 +443,9 @@ TO.plot <- ggplot(portal.turnover, aes(x = year, y = turnover, color = metric)) 
 plot(TO.plot)
 
 myt<-group_by(portal, species_id, year, plot_type) %>% count(species_id)
-for (id in myt$species_id){
-  print(id)
-}
+#for (id in myt$species_id){
+#  print(id)
+#}
 
 plotea<-function(x = ""){
   for (item in x){
@@ -693,3 +693,8 @@ Identify a few of the major challenges associated with studying biodiversity thr
 
 > ***Answer***:
 
+> Across space we expect to so spatial autocorrelation such that locations which are close together tend to be more similar in their environments than locations which are farther apart from one another. Similarly across time, timepoints are autocorrelated because the change in environmental makeup or community composition will tend to be less for timepoints 1 or 2 days/ weeks/ years apart than for timepoints many steps apart.
+
+> Across space we need to account for scale because it could make a big difference in the conclusion that we draw. For example, what may look like a tight, random cluster of points at a very large scale could look like a very evenly dispersed array of points at a finer grain. Across time, increasing the scale of the analysis could allow you to detect i) nonstationarity over longer time periods; ii) seasonality---for example, if you just measured 1 year, there would be no REPEATING pattern to call seasonality, but if you measured over 10 years, you might indeed pick up an annually-repeating pattern in your data.
+
+> Often it seems that challenges to measuring biodiversity come down to gathering the requisite amount of data at the requisite level of resolution. If you census a rodent community every week for 15 years, you will be very likely to pick up on trends and correlations in your data, if there are real biological phenomena causing them. But if you are only able to sample once each year, and only for 4 or 5 years, it will be much more difficult to use those data to delineate patterns and make predictions. So it can come down to whether the ecologist is able to make the requisite sampling effort required for visualizing and calculating statistically robust trends in the data.      For sampling across space, the challenge may be similar: is the ecologist able to include a broad enough spatial array of sites in order to visualize and statically measure the trends that she is interested in? For some studies, the requisite spatial sampling effort might be small: perhaps the ecologist only wants to now the trends in mesopredator population in one forest during a trophic cascade. But if the ecologist wants learn about differences in mesopredator population dynamics during trophic cascades in different biomes, if there are any biologically meaningful trends, they will be more difficult to detect simply because the effort required to have enough data to measure them robustly will be comparatively vast.
