@@ -1,6 +1,6 @@
 ---
 title: "Phylogenetic Diversity - Traits"
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "Roy Moger-Reischer; Z620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -45,8 +45,16 @@ In the R code chunk below, provide the code to:
 4. load all of the required R packages (be sure to install if needed).  
 
 ```{r}
-
-
+#rm(list=ls())
+setwd("~/GitHub/QB2017_Moger-Reischer/Week6-PhyloTraits")
+package.list <- c('vegan', 'tidyr', 'dplyr', 'codyn', 'ggplot2',
+'cowplot', 'MullerPlot', 'RColorBrewer', 'reshape2', 'lubridate',
+'TTR', 'xtable', 'multcomp', 'pander', 'png', 'grid', 'tseries', 'nlme', 'forecast', 'lsmeans', 'ape', 'seqinr', 'phylobase', 'adephylo', 'geiger', 'picante', 'stats', 'RColorBrewer', 'caper', 'phylolm', 'pmc', 'phangorn', 'pander')
+for (package in package.list) {
+if (!require(package, character.only = TRUE, quietly = TRUE)) {
+install.packages(package, repos='http://cran.us.r-project.org')
+library(package, character.only = TRUE) }
+}
 ```
 
 ## 2) DESCRIPTION OF DATA
@@ -63,6 +71,8 @@ Describe the differences that you observe between the files.
 
 > ***Answer 1***: 
 
+> It looks like the .afa file has been aligned. It included gaps. The .fasta file has not been aligned.
+
 In the R code chunk below, do the following:
 1. read your alignment file,
 2. convert the alignment to a DNAbin object,
@@ -70,7 +80,14 @@ In the R code chunk below, do the following:
 4. plot the alignment using a grid to visualize rows of sequences.
 
 ```{r}
+# Read Alignment File {seqinr}
+read.aln <- read.alignment(file = "./data/p.isolates.afa", format = "fasta")
+#read.aln<-WINDOWS
+p.DNAbin <- as.DNAbin(read.aln)#ape object
 
+window <- p.DNAbin[, 100:1200]
+# Command to Visusalize Sequence Alignment {ape}
+image.DNAbin(window, cex.lab = 0.50)
 
 ```
 
@@ -81,7 +98,12 @@ a. Approximately how long are our reads?
 b. What regions do you think would are appropriate for phylogenetic inference and why?  
 
 > ***Answer 2a***:   
+
+> I am unable to discern the length of the reads from the information given. It looks like the length of the sequence of interest is ~1500 in the ancestor. So the read length would not be more than that (which would be ludicrously long, an12yway). However, depending on the sequencing technology that was used, the read lengths could vary.
+
 > ***Answer 2b***:  
+
+> Variable regions can aid phylogenetic inference. If a site is invariant we cannot say anything about which taxa are more recently diverged.
 
 ## 4) MAKING A PHYLOGENETIC TREE
 
@@ -97,7 +119,18 @@ In the R code chunk below, do the following:
 4. plot the rooted tree. 
 
 ```{r}
-
+#1
+seq.dist.raw <- dist.dna(p.DNAbin, model = "raw", pairwise.deletion = FALSE)
+#2
+nj.tree <- bionj(seq.dist.raw)
+#3 Identify OG
+outgroup <- match("Methanosarcina", nj.tree$tip.label)
+# Root
+nj.rooted <- root(nj.tree, outgroup, resolve.root = TRUE)
+#4 Plot rooted
+par(mar = c(1, 1, 2, 1) + 0.1)
+plot.phylo(nj.rooted, main = "Neighbor Joining Tree", "phylogram",    use.edge.length = FALSE, direction = "right", cex = 0.6,label.offset = 1)
+add.scale.bar(cex = 0.7)
 
 ```
 
@@ -105,8 +138,9 @@ In the R code chunk below, do the following:
 
 
 > ***Answer 3***:  
- 
 
+> NJ is a useful starting tree because it is simple to understand and straightforward. Disadvantages could include that it must be ultrametric; doesn't consider Bayesian probabilities; I think that it assumes constant rate of evolution on all branches (but I could be wrong).
+ 
 
 ### B) SUBSTITUTION MODELS OF DNA EVOLUTION 
 
@@ -117,7 +151,31 @@ In the R code chunk below, do the following:
 4. create a cophylogenetic plot to compare the topologies of the trees.
 
 ```{r}
+#1
+seq.dist.F84 <- dist.dna(p.DNAbin, model = "F84", pairwise.deletion = FALSE)
+#2
+par(mar = c(5, 5, 2, 1) + 0.1)
+plot(seq.dist.raw, seq.dist.F84, pch = 20, col = "red", las = 1, asp = 1, xlim = c(0, 0.7), ylim = c(0, 0.7), xlab = "Raw Distance", ylab = "F84 Distance")
+abline(b = 1, a = 0, lty = 2)
+text(0.65, 0.6, "1:1")
 
+#3
+raw.tree <- bionj(seq.dist.raw)
+F84.tree <- bionj(seq.dist.F84)
+
+# Define OGs
+raw.outgroup <- match("Methanosarcina", raw.tree$tip.label)
+F84.outgroup <- match("Methanosarcina", F84.tree$tip.label)
+# Root
+raw.rooted <- root(raw.tree, raw.outgroup, resolve.root=TRUE)
+F84.rooted <- root(F84.tree, F84.outgroup, resolve.root=TRUE)
+#4 Make Cophylogenetic
+layout(matrix(c(1,2), 1, 2), width = c(1, 1))
+par(mar = c(1, 1, 2, 0))
+plot.phylo(raw.rooted, type = "phylogram", direction = "right", show.tip.label=TRUE,use.edge.length = FALSE, adj = 0.5, cex = 0.6, label.offset = 2, main = "Raw")
+
+par(mar = c(1, 0, 2, 1))
+plot.phylo(F84.rooted, type = "phylogram", direction = "left", show.tip.label=TRUE, use.edge.length = FALSE, adj = 0.5, cex = 0.6, label.offset = 2, main = "F84")
 
 ```
 
@@ -129,7 +187,33 @@ In the R code chunk below, do the following:
 5. be sure to format, add appropriate labels, and customize each plot.
 
 ```{r}
+#1
+seq.dist.GTR <- dist.dna(p.DNAbin, model = "GTR", pairwise.deletion = FALSE)
 
+#START HERE DUDE
+#2
+par(mar = c(5, 5, 2, 1) + 0.1)
+plot(seq.dist.GTR, seq.dist.F84, pch = 20, col = "red", las = 1, asp = 1, xlim = c(0, 0.7), ylim = c(0, 0.7), xlab = "Raw Distance", ylab = "F84 Distance")
+abline(b = 1, a = 0, lty = 2)
+text(0.65, 0.6, "1:1")
+
+#3
+raw.tree <- bionj(seq.dist.raw)
+F84.tree <- bionj(seq.dist.F84)
+
+# Define OGs
+raw.outgroup <- match("Methanosarcina", raw.tree$tip.label)
+F84.outgroup <- match("Methanosarcina", F84.tree$tip.label)
+# Root
+raw.rooted <- root(raw.tree, raw.outgroup, resolve.root=TRUE)
+F84.rooted <- root(F84.tree, F84.outgroup, resolve.root=TRUE)
+#4 Make Cophylogenetic
+layout(matrix(c(1,2), 1, 2), width = c(1, 1))
+par(mar = c(1, 1, 2, 0))
+plot.phylo(raw.rooted, type = "phylogram", direction = "right", show.tip.label=TRUE,use.edge.length = FALSE, adj = 0.5, cex = 0.6, label.offset = 2, main = "Raw")
+
+par(mar = c(1, 0, 2, 1))
+plot.phylo(F84.rooted, type = "phylogram", direction = "left", show.tip.label=TRUE, use.edge.length = FALSE, adj = 0.5, cex = 0.6, label.offset = 2, main = "F84")
 
 ```
 
