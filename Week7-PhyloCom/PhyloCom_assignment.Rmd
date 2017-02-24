@@ -1,6 +1,6 @@
 ---
 title: "Phylogenetic Diversity - Communities"
-author: "Student Name; Z620: Quantitative Biodiversity, Indiana University"
+author: "RZ Moger-Reischer; BIOL-Z 620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: pdf_document
 geometry: margin=2.54cm
@@ -41,14 +41,19 @@ In the R code chunk below, provide the code to:
 5. load the required R source file.
 
 ```{r}
+#rm(list = ls())
+#getwd()
+#setwd("~/GitHub/QB2017_Moger-Reischer/Week7-PhyloCom/")
 
+package.list <- c('picante', 'ape', 'seqinr', 'vegan', 'fossil','devtools', 'simba')
+for (package in package.list) {
+if (!require(package, character.only = TRUE, quietly = TRUE)) {
+  install.packages(package, repos='http://cran.us.r-project.org') 
+  library(package, character.only = TRUE)
+} 
+  }
 
-
-
-
-
-
-
+source("./bin/MothurTools.R")
 
 
 ```
@@ -70,11 +75,23 @@ In the R code chunk below, do the following:
 6. load the taxonomic data using the `read.tax()` function from the source-code file.
 
 ```{r}
+#1
+env <- read.table("data/20130801_PondDataMod.csv", sep = ",", header = TRUE)
+env <- na.omit(env)
+#2
+comm <- read.otu(shared = "./data/INPonds.final.rdp.shared", cutoff = "1")
+#3
+comm <- comm[grep("*-DNA", rownames(comm)), ]
+#4
+rownames(comm) <- gsub("\\-DNA", "", rownames(comm))
+rownames(comm) <- gsub("\\_", "", rownames(comm))
 
+comm <- comm[rownames(comm) %in% env$Sample_ID, ]
+#5
+comm <- comm[ , colSums(comm) > 0]
 
-
-
-
+#6
+tax <- read.tax(taxonomy = "./data/INPonds.final.rdp.1.cons.taxonomy")
 
 
 ```
@@ -91,9 +108,28 @@ Next, in the R code chunk below, do the following:
 9. plot the rooted tree.
 
 ```{r}
-
-
-
+#1
+ponds.cons <- read.alignment(file = "./data/INPonds.final.rdp.1.rep.fasta", format = "fasta")
+#2
+ponds.cons$nam <- gsub("\\|.*$", "", gsub("^.*?\t", "", ponds.cons$nam))
+#3
+outgroup <- read.alignment(file = "./data/methanosarcina.fasta", format = "fasta")
+#4
+DNAbin <- rbind(as.DNAbin(outgroup), as.DNAbin(ponds.cons))
+#5
+image.DNAbin(DNAbin, show.labels=T, cex.lab = 0.05, las = 1)
+#6
+seq.dist.jc <- dist.dna(DNAbin, model = "JC", pairwise.deletion = FALSE)
+#7
+phy.all <- bionj(seq.dist.jc)
+#8
+phy <- drop.tip(phy.all, phy.all$tip.label[!phy.all$tip.label %in% c(colnames(comm), "Methanosarcina")])
+# Identify outgroup sequence
+outgroup <- match("Methanosarcina", phy$tip.label) # Root the tree {ape}
+phy <- root(phy, outgroup, resolve.root = TRUE)
+#9
+par(mar = c(1, 1, 2, 1) + 0.1)
+plot.phylo(phy, main = "Neighbor Joining Tree", "phylogram", show.tip.label = FALSE, use.edge.length = FALSE, direction = "right", cex = 0.6, label.offset = 1)
 
 
 
@@ -109,7 +145,7 @@ In the R code chunk below, do the following:
 1. calculate Faith's D using the `pd()` function.
 
 ```{r}
-
+pd <- pd(comm, phy, include.root = FALSE)
 
 ```
 
@@ -119,10 +155,15 @@ In the R code chunk below, do the following:
 3. calculate the scaling exponent. 
 
 ```{r}
-
-
-
-
+par(mar = c(5, 5, 4, 1) + 0.1)
+#1
+plot(log(pd$S), log(pd$PD),pch = 20, col = "#7072a8", las = 1,xlab = "ln(S)", ylab = "ln(PD)", cex.main = 1, main="Phylodiversity (PD) vs. Taxonomic richness (S)")
+fit <- lm('log(pd$PD) ~ log(pd$S)')
+#2
+abline(fit, col = "#7072a8", lw = 2)
+#3
+exponent <- round(coefficients(fit)[2], 2)
+legend("topleft", legend=paste("Scaling exponent = ", exponent, sep = ""), bty = "n", lw = 2, col = "#7072a8")
 
 ```
 
@@ -133,9 +174,20 @@ c.  When would you expect these two estimates of diversity to deviate from one a
 d.  Interpret the significance of the scaling PD-S scaling exponent.
 
 > ***Answer 1a***:  
+
+> PD takes a sum of branch lengths. If there are more species present (higher richness), then there will be more branches, and the sum should be larger.
+
 > ***Answer 1b***:  
+
+> It looks like a powerlaw with exponent == 0.75 or 3/4. (Isn't that the same as metabolic rate scaling with body size?)
+
 > ***Answer 1c***:  
+
+> Perhaps if there were a recent radiation event on an island such that there are many, many taxa, but they all cluster into two or three very closely related groups which each descended from one small colonizer population. Then there might be high richness but low PD.
+
 > ***Answer 1d***: 
+
+> P <= 2x10^-16. We can be very sure that there is a real statistical relationship between (the logarithms of) these two variables.
 
 **i. Randomizations and Null Models**  
 
@@ -143,9 +195,9 @@ In the R code chunk below, do the following:
 1. estimate the standardized effect size of PD using the `richness` randomization method.  
 
 ```{r}
-
-
-
+ses.pdr <- ses.pd(comm[1:2,], phy, null.model = "richness", runs = 25, include.root = FALSE)
+ses.pdf <- ses.pd(comm[1:2,], phy, null.model = "frequency", runs = 25, include.root = FALSE)
+ses.pdsp <- ses.pd(comm[1:2,], phy, null.model = "sample.pool", runs = 25, include.root = FALSE)
 
 ```
 
@@ -155,7 +207,12 @@ a.  What are the null and alternative hypotheses you are testing via randomizati
 b.  How did your choice of null model influence your observed ses.pd values?  Explain why this choice affected or did not affect the output. 
 
 > ***Answer 2a***:  
-> ***Answer 2b***:  
+
+> We are using simulation to ascertain whether our sample is more or less phylogentically diverse than some null expectation for a sample with a given X (where X depends on the specfic null model).
+
+> ***Answer 2b***:
+
+> For the 'frequency' null model, the mean observed PD was 42.33. For the 'richness' null model, the mean observed PD was 42.33 also. The same was true for the 'sample.pool' null model. Perhaps the choice of null model did not affect the output because we ran too few randomizations to see subtle differences.
 
 ### B.  Phylogenetic Dispersion Within a Sample
 Another way to assess phylogenetic $\alpha$-diversity is to look at dispersion within a sample. 
@@ -166,8 +223,7 @@ In the R code chunk below, do the following:
 1. calculate the phylogenetic resemblance matrix for taxa in the Indiana ponds data set.
 
 ```{r}
-
-
+phydist <- cophenetic.phylo(phy)
 ```
 
 **ii.  Net Relatedness Index (NRI)**
@@ -176,12 +232,16 @@ In the R code chunk below, do the following:
 1. Calculate the NRI for each site in the Indiana ponds data set. 
 
 ```{r}
+ses.mpd <- ses.mpd(comm, phydist, null.model = "taxa.labels", abundance.weighted = FALSE, runs = 25)
+NRI <- as.matrix(-1 * ((ses.mpd[,2] - ses.mpd[,3]) / ses.mpd[,4]))
+rownames(NRI) <- row.names(ses.mpd)
+colnames(NRI) <- "NRI"
 
 
-
-
-
-
+ses.mpdabund <- ses.mpd(comm, phydist, null.model = "taxa.labels", abundance.weighted = T, runs = 25)
+NRIabund <- as.matrix(-1 * ((ses.mpdabund[,2] - ses.mpdabund[,3]) / ses.mpdabund[,4]))
+rownames(NRIabund) <- row.names(ses.mpdabund)
+colnames(NRIabund) <- "NRI"
 ```
 
 **iii.  Nearest Taxon Index (NTI)**
@@ -190,8 +250,15 @@ In the R code chunk below, do the following:
 1. Calculate the NTI for each site in the Indiana ponds data set. 
 
 ```{r}
+ses.mntd <- ses.mntd(comm, phydist, null.model = "taxa.labels", abundance.weighted = FALSE, runs = 25)
+NTI <- as.matrix(-1 * ((ses.mntd[,2] - ses.mntd[,3]) / ses.mntd[,4]))
+rownames(NTI) <- row.names(ses.mntd)
+colnames(NTI) <- "NTI"
 
-
+ses.mntdabund <- ses.mntd(comm, phydist, null.model = "taxa.labels", abundance.weighted = T, runs = 25)
+NTIabund <- as.matrix(-1 * ((ses.mntdabund[,2] - ses.mntdabund[,3]) / ses.mntdabund[,4]))
+rownames(NTIabund) <- row.names(ses.mntdabund)
+colnames(NTIabund) <- "NTI"
 
 ```
 
@@ -205,9 +272,22 @@ Modify and rerun the code so that NRI and NTI are calculated using abundance dat
 How does this affect the interpretation of NRI and NTI?
 
 > ***Answer 3a***:  
+
+> NRI takes the average of pairwise distances along the phylogeny for the species in a site, and compares it to a null expectation.
+
 > ***Answer 3b***:  
+
+> NTI takes the average minimum pairwise distances along the phylogeny for the species in a site, and compares it to a null expectation.
+
 > ***Answer 3c***:  
+
+> NRI was negative for all sites. This indicates at the species are phylogenetically overdispersed.
+
+> NTI was closer to zero and in fact postive for some sites. Using this metric the samples appear to more closely match the null expectations.
+
 > ***Answer 3d***:  
+
+> NRI values were now close to zero and/or tending to be positive. Now the interpretation is that there is some phylogenetic clustering for the sites in our sample. NTI values were more-positive whilst accounting for the abundance data, implying more phylogenetic clustering. Overall this tells me that the most-abundant species tend to be phylogenetically clustered.
 
 ## 5) PHYLOGENETIC BETA DIVERSITY 
 
@@ -217,8 +297,10 @@ In the R code chunk below, do the following:
 2. calculate the phylogenetically based community resemblance matrix using UniFrac distance.
 
 ```{r}
-
-
+#1
+dist.mp <- comdist(comm, phydist)
+#2
+dist.uf <- unifrac(comm, phy)
 
 
 ```
@@ -227,7 +309,10 @@ In the R code chunk below, do the following:
 1. plot Mean Pair Distance versus UniFrac distance and compare.
 
 ```{r}
-
+par(mar = c(5, 5, 2, 1) + 0.1)
+plot(dist.mp, dist.uf,pch = 20, col = "red", las = 1, asp = 1, xlim = c(0.15, 0.5), ylim = c(0.15, 0.5),xlab = "Mean Pair Distance", ylab = "UniFrac Distance")
+abline(b = 1, a = 0, lty = 2)
+text(0.5, 0.47, "1:1")
 
 
 
@@ -243,6 +328,9 @@ That means that we are not taking into account the abundance of each taxon in ea
 c. Why might MPD show less variation than UniFrac?
 
 > ***Answer 4a***: 
+
+> 
+
 > ***Answer 4b***: 
 > ***Answer 4c***:
 
