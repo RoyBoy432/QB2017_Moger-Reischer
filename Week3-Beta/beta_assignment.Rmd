@@ -43,7 +43,7 @@ In the R code chunk below, provide the code to:
 4. load the `vegan` R package (be sure to install if needed).  
 
 ```{r}
-rm(list = ls())
+#rm(list = ls())
 getwd()
 #setwd("/Users/rzmogerr/GitHub/QB2017_Moger-Reischer/Week3-Beta")
 #I'll load all of the packages, following the style of the handout

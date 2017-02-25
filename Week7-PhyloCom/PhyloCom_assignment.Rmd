@@ -2,7 +2,7 @@
 title: "Phylogenetic Diversity - Communities"
 author: "RZ Moger-Reischer; BIOL-Z 620: Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: pdf_document
+output: html_document
 geometry: margin=2.54cm
 ---
 
@@ -44,6 +44,7 @@ In the R code chunk below, provide the code to:
 #rm(list = ls())
 #getwd()
 #setwd("~/GitHub/QB2017_Moger-Reischer/Week7-PhyloCom/")
+#setwd("C:\\Users\\rmoge\\GitHub\\QB2017_Moger-Reischer\\Week7-PhyloCom")
 
 package.list <- c('picante', 'ape', 'seqinr', 'vegan', 'fossil','devtools', 'simba')
 for (package in package.list) {
@@ -329,10 +330,15 @@ c. Why might MPD show less variation than UniFrac?
 
 > ***Answer 4a***: 
 
-> 
+> For all pairs of taxa in two samples, the mean pairwise distance looks at all those pairwise distances and takes average. On the other hand, UniFrac distance looks at the entire tree topology, and then calculates what proporortion of it comprises branches which are part of both samples and what proportion of its branch length is occupied by only one of those two samples.
 
 > ***Answer 4b***: 
+
+> The UniFrac distance can vary a lot, but the mean pair distance changes only a little.
+
 > ***Answer 4c***:
+
+> The mean pairwise distance is an average of all pairs---an average of many calculations. Contrariwise, the UniFrac distance between two samples is a measurement of a single ratio. I would expect that a metric which is an average will tend to be less variable.
 
 
 ### B. Visualizing Phylogenetic Beta-Diversity
@@ -343,11 +349,13 @@ In the R code chunk below, do the following:
 2. calculate the explained variation for the first three PCoA axes.
 
 ```{r}
-
-
-
-
-
+#1
+pond.pcoa <- cmdscale(dist.uf, eig = T, k = 3)
+#2
+explainvar1 <- round(pond.pcoa$eig[1] / sum(pond.pcoa$eig), 3) * 100
+explainvar2 <- round(pond.pcoa$eig[2] / sum(pond.pcoa$eig), 3) * 100
+explainvar3 <- round(pond.pcoa$eig[3] / sum(pond.pcoa$eig), 3) * 100
+sum.eig <- sum(explainvar1, explainvar2, explainvar3)
 
 ```
 
@@ -360,16 +368,18 @@ In the R code chunk below, do the following:
 4. customize the plot. 
 
 ```{r}
-
-
-
-
-
-
-
-
-
-
+par(mar = c(5, 5, 1, 2) + 0.1)
+#1, #2
+plot(pond.pcoa$points[ ,1], pond.pcoa$points[ ,2],xlim = c(-0.2, 0.2), ylim = c(-.16, 0.16),xlab = paste("PCoA 1 (", explainvar1, "%)", sep = ""),ylab = paste("PCoA 2 (", explainvar2, "%)", sep = ""),pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+#3
+points(pond.pcoa$points[ ,1], pond.pcoa$points[ ,2],
+pch = 19, cex = 3, bg = "#000000", col = "#e1793d")
+text(pond.pcoa$points[ ,1], pond.pcoa$points[ ,2],
+labels = row.names(pond.pcoa$points))
 
 
 ```
@@ -378,9 +388,37 @@ In the following R code chunk:
 1. perform another PCoA on taxonomic data using an appropriate measure of dissimilarity, and
 2. calculate the explained variation on the first three PCoA axes. 
 
+```{r}
+dist.db <- vegdist(comm, method = "bray")
+pond.pcoa.tax <- cmdscale(dist.db, eig = T, k = 3)
+#2
+explainvar1 <- round(pond.pcoa.tax$eig[1] / sum(pond.pcoa.tax$eig), 3) * 100
+explainvar2 <- round(pond.pcoa.tax$eig[2] / sum(pond.pcoa.tax$eig), 3) * 100
+explainvar3 <- round(pond.pcoa.tax$eig[3] / sum(pond.pcoa.tax$eig), 3) * 100
+sum.eig.tax <- sum(explainvar1, explainvar2, explainvar3)
+
+par(mar = c(5, 5, 1, 2) + 0.1)
+#1, #2
+plot(pond.pcoa$points[ ,1], pond.pcoa$points[ ,2],xlim = c(-0.2, 0.2), ylim = c(-.16, 0.16),xlab = paste("PCoA 1 (", explainvar1, "%)", sep = ""),ylab = paste("PCoA 2 (", explainvar2, "%)", sep = ""),pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+#3
+points(pond.pcoa$points[ ,1], pond.pcoa$points[ ,2],
+pch = 19, cex = 3, bg = "#000000", col = "#299d09")
+text(pond.pcoa$points[ ,1], pond.pcoa$points[ ,2],
+labels = row.names(pond.pcoa$points))
+
+
+```
+
+
 ***Question 5***: Using a combination of visualization tools and percent variation explained, how does the phylogenetically based ordination compare or contrast with the taxonomic ordination? What does this tell you about the importance of phylogenetic information in this system?
 
 > ***Answer 5***: 
+
+> The PCoA clusterings look mostly similar. However, for the taxonomic ordination, the first two PCoA axes explain a lot more (40.4%) of the variation than do the first two axes for the phylogenetic ordination (15.5%). This could mean that phylogenetic information is not very important for this system.
 
 ### C. Hypothesis Testing
 
@@ -391,8 +429,10 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+watershed <- env$Location
+adonis(dist.uf ~ watershed, permutations = 999)
 
-
+cata<-adonis(vegdist(decostand(comm, method = "log"),method = "bray") ~ watershed,permutations = 999)
 
 
 ```
@@ -405,7 +445,9 @@ In the R code chunk below, do the following:
 
 ```{r}
 
-
+envs <- env[, 5:19]
+envs <- envs[, -which(names(envs) %in% c("TDS", "Salinity", "Cal_Volume"))]
+env.dist <- vegdist(scale(envs), method = "euclid")
 
 
 ```
@@ -415,7 +457,7 @@ In the R code chunk below, do the following:
 
 ```{r}
 
-
+my.mantel<-mantel(dist.uf, env.dist)
 ```
 
 Last, conduct a distance-based Redundancy Analysis (dbRDA). 
@@ -426,21 +468,42 @@ In the R code chunk below, do the following:
 3. plot the dbRDA results
 
 ```{r}
-
-
-
-
-
-
-
-
-
+#1
+ponds.dbrda <- vegan::dbrda(dist.uf ~ ., data = as.data.frame(scale(envs)))
+#2
+anova(ponds.dbrda, by = "axis")
+ponds.fit <- envfit(ponds.dbrda, envs, perm = 999)
+ponds.fit
+# Calculate explained variation
+dbrda.explainvar1 <- round(ponds.dbrda$CCA$eig[1] / sum(c(ponds.dbrda$CCA$eig, ponds.dbrda$CA$eig)), 3) * 100
+dbrda.explainvar2 <- round(ponds.dbrda$CCA$eig[2] / sum(c(ponds.dbrda$CCA$eig, ponds.dbrda$CA$eig)), 3) * 100
+#3
+par(mar = c(5, 5, 4, 4) + 0.1)
+plot(scores(ponds.dbrda, display = "wa"), xlim = c(-2, 2), ylim = c(-2, 2), xlab = paste("dbRDA 1 (", dbrda.explainvar1, "%)", sep = ""), ylab = paste("dbRDA 2 (", dbrda.explainvar2, "%)", sep = ""), pch = 16, cex = 2.0, type = "n", cex.lab = 1.5, cex.axis = 1.2, axes = FALSE)
+# Axes
+axis(side = 1, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+axis(side = 2, labels = T, lwd.ticks = 2, cex.axis = 1.2, las = 1)
+abline(h = 0, v = 0, lty = 3)
+box(lwd = 2)
+# labels, points
+points(scores(ponds.dbrda, display = "wa"),
+pch = 19, cex = 3, bg = "#4cf076", col = "#4cf076")
+text(scores(ponds.dbrda, display = "wa"),
+labels = row.names(scores(ponds.dbrda, display = "wa")), cex = 0.5)
+#vectors
+vectors <- scores(ponds.dbrda, display = "bp")
+arrows(0, 0, vectors[,1] * 2, vectors[, 2] * 2,lwd = 2, lty = 1, length = 0.2, col = "#2f5cb5")
+text(vectors[,1] * 2, vectors[, 2] * 2, pos = 3,labels = row.names(vectors))
+axis(side = 3, lwd.ticks = 2, cex.axis = 1.2, las = 1, col = "#2f5cb5", lwd = 2.2, at = pretty(range(vectors[, 1])) * 2, labels = pretty(range(vectors[, 1])))
+axis(side = 4, lwd.ticks = 2, cex.axis = 1.2, las = 1, col = "#2f5cb5", lwd = 2.2, at = pretty(range(vectors[, 2])) * 2, labels = pretty(range(vectors[, 2])))
 
 ```
 
 ***Question 6***: Based on the multivariate procedures conducted above, describe the phylogenetic patterns of $\beta$-diversity for bacterial communities in the Indiana ponds.   
 
 > ***Answer 6***: 
+
+> Watershed of origin has a significant influence on phylogenetic distribution of species (P = 0.006). Among the environmental variables, it looks like depth; ORP; temperature; conductivity; pH; and chlorophyll a are significant predictors of phylogenetic composition.
 
 ## 6) SPATIAL PHYLOGENETIC COMMUNITY ECOLOGY
 
@@ -456,13 +519,21 @@ In the R code chunk below, do the following:
 
 ```{r}
 
-
-
-
-
-
-
-
+#1
+long.lat <- as.matrix(cbind(env$long, env$lat))
+coord.dist <- earth.dist(long.lat, dist = TRUE)
+#2
+bray.curtis.dist <- 1 - vegdist(comm)
+#3
+unifrac.dist <- 1 - dist.uf
+# Transform all distances into list format:
+unifrac.dist.ls <- liste(unifrac.dist, entry = "unifrac")
+bray.curtis.dist.ls <- liste(bray.curtis.dist, entry = "bray.curtis")
+coord.dist.ls <- liste(coord.dist, entry = "geo.dist")
+env.dist.ls <- liste(env.dist, entry = "env.dist")
+#4
+df <- data.frame(coord.dist.ls, bray.curtis.dist.ls[, 3], unifrac.dist.ls[, 3], env.dist.ls[, 3])
+names(df)[4:6] <- c("bray.curtis", "unifrac", "env.dist")
 
 ```
 
@@ -474,7 +545,23 @@ In the R code chunk below, do the following:
 
 ```{r}
 
+par(mfrow=c(2, 1), mar = c(1, 5, 2, 1) + 0.1, oma = c(2, 0, 0, 0))
+#1
+plot(df$geo.dist, df$bray.curtis, xlab = "", xaxt = "n", las = 1, ylim = c(0.1, 0.9), ylab="Bray-Curtis Similarity", main = "Distance Decay", col = "#4189b4")
+#3
+DD.reg.bc <- lm(df$bray.curtis ~ df$geo.dist)
+summary(DD.reg.bc)
+abline(DD.reg.bc , col = "#00eaf3", lwd = 2)
 
+par(mar = c(2, 5, 1, 1) + 0.1)
+#2
+plot(df$geo.dist, df$unifrac, xlab = "", las = 1, ylim = c(0.1, 0.9), ylab = "Unifrac Similarity", col = "#805239")
+#3
+DD.reg.uni <- lm(df$unifrac ~ df$geo.dist)
+summary(DD.reg.uni)
+abline(DD.reg.uni, col = "#00eaf3", lwd = 2)
+
+mtext("Geographic Distance (km)", side = 1, adj = 0.55, line = 0.5, outer = TRUE)
 
 
 
@@ -488,7 +575,7 @@ In the R code chunk below, test if the trend lines in the above distance decay r
 
 ```{r}
 
-
+diffslope(df$geo.dist, df$unifrac, df$geo.dist, df$bray.curtis)
 
 ```
 
@@ -496,6 +583,9 @@ In the R code chunk below, test if the trend lines in the above distance decay r
 
 > ***Answer 7***: 
 
+> The slopes are statistically significantly different. However, the difference is quite small in magnitude (0.001603). Therefore one might believe it would be wise to investigate the biology from which the statistical difference arises---it is possible that this statistically significant difference is not biologically meaningful.
+
+> That said, the magnitude of the slopes is very small. And in fact the absolute value of the slope for the DD is an order of magnitude larger than that of the slope of the PDD. It appears that there is biological significance. In addition, for the PDD the slope is slightly positive (although the regression itself is not significant (P = 0.07738))---when accounting phylogeny there is no decrease in similarity over geographic distance. Whereas for the taxonomic DD there is a statistically signifcant (P = 0.0262) decrease in similarity across geographic distance.
 
 ### B. Phylogenetic diversity-area relationship (PDAR)
 
@@ -505,12 +595,35 @@ In the R code chunk below, write a function to generate the PDAR.
 
 ```{r}
 
+PDAR <- function(comm, tree){
+  areas <- c()
+  diversity <- c()
+  num.plots <- c(2, 4, 8, 16, 32, 51)
+  for (i in num.plots){
+    areas.iter <- c()
+    diversity.iter <- c()
+    for (j in 1:10){
+      pond.sample <- sample(51, replace = FALSE, size = i)
+      area <- 0
+      sites <- c()
+      for (k in pond.sample) {
+        area <- area + pond.areas[k]
+        sites <- rbind(sites, comm[k, ])
+        }
 
+            areas.iter <- c(areas.iter, area)
+      psv.vals <- psv(sites, tree, compute.var = FALSE)
+      psv <- psv.vals$PSVs[1]
+      diversity.iter <- c(diversity.iter, as.numeric(psv))
+    }
+    
+    diversity <- c(diversity, mean(diversity.iter))
+    areas <- c(areas, mean(areas.iter))
+    print(c(i, mean(diversity.iter), mean(areas.iter)))
+  }
 
-
-
-
-
+  return(cbind(areas, diversity))
+  }
 
 
 ```
@@ -525,13 +638,28 @@ In the R code chunk below, do the following:
 5. customize the PDAR plot. 
 
 ```{r}
+#1
+pond.areas <- as.vector(pi * (env$Diameter/2)^2)
+#2
+pdar <- PDAR(comm, phy)
+pdar <- as.data.frame(pdar)
+pdar$areas <- sqrt(pdar$areas)
+#3
+Pearson <- cor.test(pdar$areas, pdar$diversity, method = "pearson")
+P <- round(Pearson$estimate, 2)
+P.pval <- round(Pearson$p.value, 3)
 
+Spearman <- cor.test(pdar$areas, pdar$diversity, method = "spearman")
+rho <- round(Spearman$estimate, 2)
+rho.pval <- round(Spearman$p.value, 3)
+#4
+plot.new()
+par(mfrow=c(1, 1), mar = c(1, 5, 2, 1) + 0.1, oma = c(2, 0, 0, 0))
 
-
-
-
-
-
+plot(pdar[, 1], pdar[, 2], xlab = "Area", ylab = "PSV", ylim = c(0, 1),main = "Phylogenetic Diversity-Area Relationship",col = "#a96632", pch = 16, las = 1)
+legend("topleft", legend= c(paste("Spearman Correlation = ", rho, "; p = ", rho.pval, sep = ""),paste("Pearson Correlation = ", P, "; p = ", P.pval, sep = "")),bty = "n", col = "#a96632")
+dufit<-lm(pdar$diversity~pdar$areas )
+abline(.4266,-0.00002398, col="#dbd4ab")
 ```
 
 ***Question 8***: Compare your observations of the microbial PDAR and SAR in the Indiana ponds?
@@ -539,6 +667,10 @@ How might you explain the differences between the taxonomic (SAR) and phylogenet
 
 > ***Answer 8***: 
 
+> The z value for the SAR is 0.144. For the PDAR, however, the slope is essentially zero (very slightly negative, slope=-0.00002398). This makes sense. The SAR should always be positive, because you should not 'lose' species as area increases. Contrariwise, it is possible that as area increases the spatial extent will start to include new species that are very closely related to species which have already been sampled---perhaps these close relatives are occupying the same niche, but are located somewhere adjacent. In such a circumstance there is phylogenetic clustering of trait values, and local competitive exclusion among closely related species.
+
 ## SYNTHESIS
 
 Ignoring technical or methodological constraints, discuss how phylogenetic information could be useful in your own research. Specifically, what kinds of phylogenetic data would you need? How could you use it to answer important questions in your field? In your response, feel free to consider not only phylogenetic approaches related to phylogenetic community ecology, but also those we discussed last week in the PhyloTraits module, or any other concepts that we have not covered in this course.
+
+> Let us imagine that there are epigenetic mechanisms regulating a dormancy response to starvation in bacteria. There are a few ways I could use phylogenetic information. Firstly, I could construct a tree and assess the clustered/"overdispersed" pattern of the trait(i.e. up- or down-regulation of methylation when starved)'s appearance on the tree topology. Secondly, within and between methyltransferase families, I would like to BLAST flanking genes for each dormancy-related methylation motif in a custom library all-against-all search. By identifying reciprocal best hits, I would be able to determine which SPECIFIC motifs are phylogenetically conserved. (Too, I might be able to learn which up- and down-stream GENEs could be involved in the dormancy response.)
