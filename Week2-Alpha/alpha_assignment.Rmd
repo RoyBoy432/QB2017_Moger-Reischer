@@ -35,7 +35,7 @@ In the R code chunk below, please provide the code to:
 4) Load the `vegan` R package (be sure to install if needed).
 
 ```{r}
-rm(list=ls())
+#rm(list=ls())
 getwd()
 #setwd("~/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
 #setwd("/Users/rzmogerr/GitHub/QB2017_Moger-Reischer/Week2-Alpha")
