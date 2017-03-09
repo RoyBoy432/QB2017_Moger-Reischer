@@ -3,7 +3,7 @@ title: Effects of Soil Warming Plus Nitrogen Addition on Plant Richness and Dive
   at Harvard Forest
 author: "Roy Moger-Reischer and Katie Beidler, Quantitative Biodiversity, Indiana University"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: pdf_document
+output: html_document
 geometry: margin=2.54cm
 ---
 
